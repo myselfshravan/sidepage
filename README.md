@@ -1,36 +1,56 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# sidepage
 
-## Getting Started
+An independent digital publishing house for one author: a **memoir** collection and a **fiction** collection on a shared publishing engine, an **Author Studio** for writing and publishing, and a reader built for long attention.
 
-First, run the development server:
+Every piece is a publication, not a post. It has immutable editions, historical dates that mean what they say, and an event history.
+
+- Product: [docs/PRD.md](docs/PRD.md)
+- Architecture: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Data model: [docs/DATA_MODEL.md](docs/DATA_MODEL.md)
+- Security: [docs/SECURITY.md](docs/SECURITY.md)
+- Deployment: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+- Roadmap and decisions: [docs/ROADMAP.md](docs/ROADMAP.md), [docs/DECISIONS.md](docs/DECISIONS.md)
+- Where things stand: [PROJECT_STATUS.md](PROJECT_STATUS.md)
+
+## Stack
+
+Next.js 16 (App Router, Cache Components), React 19, TypeScript (strict), Tailwind CSS 4, Tiptap 3, Firebase Auth, Cloud Firestore and Storage (Admin SDK on the server only), Zod, Vitest, Playwright, GitHub Actions, Vercel.
+
+## Run it locally
+
+Requirements: Node 24, pnpm 10, Java 21 (for the Firebase emulators).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env.local        # emulator defaults work as-is
+
+pnpm emulators                    # terminal 1: Auth, Firestore, Storage emulators (UI on :4000)
+pnpm seed                         # terminal 2: author account + sample publications
+pnpm dev                          # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Sign in at `/sign-in` with `AUTHOR_EMAIL` and the password `sidepage-local-only`. The email form appears only in emulator mode. Seed data is placeholder text and refuses to run against a real project.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Tests
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it runs | Needs |
+|---|---|---|
+| `pnpm typecheck` / `pnpm lint` | TypeScript, ESLint (including architecture boundary rules) | — |
+| `pnpm test` | Unit tests: lifecycle state machine (property-based), manuscript validation, dates, slugs | — |
+| `pnpm test:emulated` | Security-rules tests and service integration tests (publishing, editions, scheduling, auth, rate limits) | Java; starts the emulators itself |
+| `pnpm test:e2e` | Playwright journeys on desktop and mobile against a production build | `pnpm emulators`, `pnpm seed`, `pnpm build` |
+| `pnpm check:secrets` | Fails if credentials or `.env` files are tracked | — |
 
-## Learn More
+Heavy commands can be wrapped with `scripts/limited.sh <minutes> <command>`, which kills the process tree past a time limit or 4 GB of RSS.
 
-To learn more about Next.js, take a look at the following resources:
+## Repository layout
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/domain/         pure business rules: lifecycle, manuscript schema, dates, slugs
+src/server/         server-only: Firebase, auth, services, public read model
+src/content/        manuscript editor extensions and the JSON→React renderer
+src/app/            routes: (house) home/about/archive, memoirs, fiction, studio, api
+src/components/     site, publication, reader, studio, editor
+tests/              domain, integration (emulators), rules, e2e
+scripts/            seed, grant-author, limited.sh, check-secrets
+```

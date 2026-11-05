@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
 test("reader preferences persist without a flash", async ({ page }) => {
   await page.goto("/memoirs/the-ferry-at-dusk/crossing");
   await expect(page.getByRole("heading", { name: "Crossing" })).toBeVisible();
-  await page.getByRole("button", { name: "Aa" }).click();
+  await page.getByRole("button", { name: "Reading settings" }).click();
   await page.getByRole("button", { name: "Larger text" }).click();
   await page.getByText("Sans", { exact: true }).click();
   await page.getByText("Dark", { exact: true }).click();

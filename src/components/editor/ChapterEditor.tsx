@@ -3,7 +3,7 @@
 import { EditorContent, useEditor, useEditorState, type Editor } from "@tiptap/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { checkpointAction, saveChapterAction, setChapterSlugAction } from "@/app/studio/actions";
 import { manuscriptExtensions } from "@/content/editor/extensions";
 import { readingMinutes, wordCount } from "@/domain/manuscript/metrics";
@@ -110,9 +110,10 @@ export function ChapterEditor({ workId, chapterId, initial, readOnly, readOnlyRe
   const stats = useEditorState({
     editor,
     selector: ({ editor: e }) => {
-      if (!e) return { words: 0, minutes: 0, bold: false, italic: false, heading: 0, quote: false, bullet: false, ordered: false, link: false, footnote: false };
+      if (!e) return { ready: false, words: 0, minutes: 0, bold: false, italic: false, heading: 0, quote: false, bullet: false, ordered: false, link: false, footnote: false };
       const words = wordCount(e.getJSON() as JSONNode);
       return {
+        ready: true,
         words,
         minutes: readingMinutes(words),
         bold: e.isActive("bold"),
@@ -126,6 +127,10 @@ export function ChapterEditor({ workId, chapterId, initial, readOnly, readOnlyRe
       };
     },
   });
+
+  // Until the editor reports its first state, show the counts of the saved chapter.
+  const initialWords = useMemo(() => wordCount(initial.doc as JSONNode), [initial.doc]);
+  const words = stats?.ready ? stats.words : initialWords;
 
   // Never lose work: warn before closing the tab, and flush when the tab is hidden.
   useEffect(() => {
@@ -304,11 +309,11 @@ export function ChapterEditor({ workId, chapterId, initial, readOnly, readOnlyRe
             <dl className="mt-3 space-y-1 text-xs text-muted">
               <div className="flex justify-between">
                 <dt>Words</dt>
-                <dd className="font-mono">{(stats?.words ?? 0).toLocaleString("en-GB")}</dd>
+                <dd className="font-mono">{words.toLocaleString("en-GB")}</dd>
               </div>
               <div className="flex justify-between">
                 <dt>Reading time</dt>
-                <dd className="font-mono">{stats?.minutes ?? 0} min</dd>
+                <dd className="font-mono">{readingMinutes(words)} min</dd>
               </div>
             </dl>
           </div>

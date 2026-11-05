@@ -1,11 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "./ui";
 
 export function SignOutButton() {
-  const router = useRouter();
   const [busy, setBusy] = useState(false);
   return (
     <Button
@@ -15,8 +13,9 @@ export function SignOutButton() {
       onClick={async () => {
         setBusy(true);
         await fetch("/api/auth/session", { method: "DELETE" }).catch(() => undefined);
-        router.replace("/sign-in");
-        router.refresh();
+        // A full navigation drops every studio payload held in the client router cache.
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- auth changed; the client cache must be discarded
+      window.location.assign("/sign-in");
       }}
     >
       {busy ? "Signing out…" : "Sign out"}

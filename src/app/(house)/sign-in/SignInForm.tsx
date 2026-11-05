@@ -1,15 +1,14 @@
 "use client";
 
 import { GoogleAuthProvider, signInWithEmailAndPassword, signInWithPopup, signOut, type UserCredential } from "firebase/auth";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { clientEnv } from "@/lib/env.client";
 import { clientAuth } from "@/lib/firebase-client";
+import { useHydrated } from "@/components/reader/storage";
 
 type State = { kind: "idle" } | { kind: "working" } | { kind: "error"; message: string };
 
 export function SignInForm() {
-  const router = useRouter();
   const [state, setState] = useState<State>({ kind: "idle" });
 
   async function finish(signIn: () => Promise<UserCredential>) {
@@ -26,8 +25,10 @@ export function SignInForm() {
       });
       const body = (await res.json().catch(() => ({}))) as { message?: string };
       if (!res.ok) throw new Error(body.message ?? "Sign-in failed.");
-      router.replace("/studio");
-      router.refresh();
+      // A full navigation: auth changed, so nothing cached by the client router
+      // (such as a prefetched "signed out" redirect) may be reused.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- auth changed; the client cache must be discarded
+      window.location.assign("/studio");
     } catch (error) {
       const message = error instanceof Error ? friendly(error.message) : "Sign-in failed.";
       setState({ kind: "error", message });
@@ -36,7 +37,10 @@ export function SignInForm() {
     }
   }
 
-  const working = state.kind === "working";
+  const hydrated = useHydrated();
+  // Until React has hydrated, the buttons do nothing useful; keep them disabled so a
+  // native form submission can never send credentials anywhere.
+  const working = state.kind === "working" || !hydrated;
 
   return (
     <div className="mt-10 space-y-8">
@@ -51,6 +55,8 @@ export function SignInForm() {
 
       {clientEnv.useEmulators ? (
         <form
+          method="post"
+          action="/sign-in"
           className="space-y-3 border-t border-rule pt-8"
           onSubmit={(e) => {
             e.preventDefault();

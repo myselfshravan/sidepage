@@ -18,7 +18,7 @@ export function SiteFooter() {
           <Link href="/archive" className="hover:text-ink">
             Archive
           </Link>
-          <Link href="/studio" className="hover:text-ink">
+          <Link href="/studio" prefetch={false} className="hover:text-ink">
             Studio
           </Link>
           <span>

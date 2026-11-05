@@ -28,7 +28,9 @@ export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: 
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{ ok: boolean; message: string }>();
   const [dirty, setDirty] = useState(false);
-  const zones = useMemo(() => Intl.supportedValuesOf("timeZone"), []);
+  // Browsers differ on canonical names (Chrome lists "Asia/Calcutta", not "Asia/Kolkata"),
+  // so the saved zone is always offered first and never silently replaced.
+  const zones = useMemo(() => [initial.timezone, ...Intl.supportedValuesOf("timeZone").filter((z) => z !== initial.timezone)], [initial.timezone]);
   const written = initial.original_written_at;
   const digitizedDay = initial.digitized_at ? instantToZonedWallTime(new Date(initial.digitized_at), initial.timezone).slice(0, 10) : "";
 
@@ -121,7 +123,7 @@ export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: 
               <input id="m-digitized" type="date" name="digitized_at" defaultValue={digitizedDay} className={inputClass} />
             </Field>
             <Field label="Time zone" htmlFor="m-tz" hint="Dates you enter and see are in this zone.">
-              <select id="m-tz" name="timezone" defaultValue={initial.timezone} className={inputClass}>
+              <select id="m-tz" name="timezone" defaultValue={initial.timezone} className={inputClass} suppressHydrationWarning>
                 {zones.map((z) => (
                   <option key={z} value={z}>
                     {z}

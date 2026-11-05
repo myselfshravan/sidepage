@@ -137,7 +137,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
     return () => clearTimeout(t);
   }, [notice]);
 
-  const toolbarButton = "inline-flex min-h-11 min-w-11 items-center justify-center px-3 meta uppercase hover:text-ink aria-expanded:text-ink";
+  const toolbarButton = "min-h-11 min-w-11 items-center justify-center px-2 sm:px-3 meta uppercase hover:text-ink aria-expanded:text-ink";
 
   return (
     <div data-reader className="relative min-h-screen">
@@ -157,17 +157,17 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
         className={`no-print sticky top-0 z-30 border-b border-rule bg-paper/95 backdrop-blur-sm transition-transform duration-200 ease-page ${chromeHidden && !panel ? "-translate-y-full" : ""}`}
       >
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 sm:px-6">
-          <Link href={base} className="meta truncate py-3 uppercase hover:text-ink">
-            ← {workTitle}
+          <Link href={base} className="meta min-w-0 truncate py-3 uppercase hover:text-ink" aria-label={`Back to ${workTitle}`}>
+            ← <span className="hidden sm:inline">{workTitle}</span>
           </Link>
           <div className="flex items-center">
-            <button type="button" className={toolbarButton} aria-expanded={panel === "contents"} aria-controls="reader-contents" onClick={() => setPanel(panel === "contents" ? null : "contents")}>
+            <button type="button" className={`${toolbarButton} inline-flex`} aria-expanded={panel === "contents"} aria-controls="reader-contents" onClick={() => setPanel(panel === "contents" ? null : "contents")}>
               Contents
             </button>
-            <button type="button" className={toolbarButton} aria-expanded={panel === "settings"} aria-controls="reader-settings" onClick={() => setPanel(panel === "settings" ? null : "settings")}>
+            <button type="button" className={`${toolbarButton} inline-flex`} aria-label="Reading settings" aria-expanded={panel === "settings"} aria-controls="reader-settings" onClick={() => setPanel(panel === "settings" ? null : "settings")}>
               Aa
             </button>
-            <button type="button" className={toolbarButton} onClick={addBookmark} disabled={!hydrated}>
+            <button type="button" className={`${toolbarButton} inline-flex`} onClick={addBookmark} disabled={!hydrated}>
               Bookmark
             </button>
             <button type="button" className={`${toolbarButton} hidden sm:inline-flex`} aria-pressed={fullscreen} onClick={toggleFullscreen}>

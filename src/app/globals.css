@@ -347,6 +347,11 @@ html[data-reader-mode="light"] [data-theme="fiction"] [data-reader] {
   }
 
   /* ---------- Editor surface (studio) ---------- */
+  /* Manuscripts are written in the reading face, not the studio's UI face. */
+  .editor-surface {
+    --theme-body: var(--font-newsreader), Georgia, serif;
+    --theme-display: var(--font-newsreader), Georgia, serif;
+  }
   .editor-surface .ProseMirror {
     outline: none;
     min-height: 60vh;
