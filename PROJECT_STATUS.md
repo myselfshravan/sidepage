@@ -1,6 +1,6 @@
 # Project status
 
-**sidepage is a live multi-author platform at https://sidepage.vercel.app.** Readers sign up, authors are approved by an admin, and each author manages only their own work. Private and invited reading (Phase 4) is next.
+**sidepage is a live multi-author platform at https://sidepage.vercel.app.** Agents can write and publish through a local MCP server (docs/AGENTS.md); works can carry pen names and be private behind secret links.
 Last updated 2026-11-06.
 
 ## Done and verified
@@ -19,15 +19,15 @@ Each item was checked by the named tests, or in a real browser (Chromium via Pla
 | Security | Deny-all rules; httpOnly session cookies; author = claim + verified email; revocation; CSRF origin checks; rate limits; CSP and security headers; strict public/private read separation; no client token storage. | `tests/rules`, `tests/integration/auth.test.ts`, e2e (forged cookie, cross-site POST, sign-out replay) |
 | Tooling | Strict TS, ESLint with architecture boundary rules, CI workflow, scheduled-publish workflow, secret scan, emulator seed, `scripts/limited.sh` resource cap. | `pnpm verify` |
 
-## Test status (last run 2026-11-06, commit `76bd0ef`)
+## Test status (last run 2026-11-06, commit `da64d06`)
 
 | Suite | Result |
 |---|---|
 | `pnpm typecheck`, `pnpm lint` | pass, 0 warnings |
-| `pnpm test` (unit, including access policy and the analytics privacy check) | 43/43 |
-| Integration + rules (emulators; including cross-author isolation, roles, the author-request flow and reader data) | 58/58 |
+| `pnpm test` (unit, including Markdown round trip, access policy and the analytics privacy check) | 49/49 |
+| Integration + rules (emulators; including secret links, pen names, API tokens, cross-author isolation, roles, reader data) | 68/68 |
 | `pnpm build` | pass |
-| `pnpm test:e2e` (sign-up and verification, author approval, cross-author isolation, library, synced bookmarks, publishing journey, reader) | 17/17 |
+| `pnpm test:e2e` (including an agent writing and privately publishing through the real MCP server) | 20/20 |
 
 ## Deployment status
 
@@ -41,11 +41,13 @@ Each item was checked by the named tests, or in a real browser (Chromium via Pla
 | Production checks | Public pages 200 and CDN-cached; security headers present; `/studio` redirects; forged cookie gets no data; cross-site session POST 403; bad token 401; cron without secret 401. |
 | Auth providers | Google, plus email/password with verification, enabled on `sidepage-c4daa`. |
 | PostHog | Shares the existing PostHog project; every event is tagged `app: sidepage` (D18). |
-| Still open | Your admin role (sign in once, then `pnpm grant-admin`). Private and invited reading (Phase 4). Separate `sidepage-prod` project, domain, backups (Phase 9). |
+| Admin | shravanrevanna@gmail.com is admin on `sidepage-c4daa`. |
+| Agents | Create a token at /studio/admin, then register the MCP server (docs/AGENTS.md). |
+| Still open | Invite-by-account and gift invitations; a PostHog dashboard once events flow; separate `sidepage-prod` project, domain, backups (Phase 9). |
 
 ## Known limitations
 
-- **Visibility:** only PUBLIC works are served. UNLISTED and PRIVATE hide a work completely until sharing (Phase 4) lands.
+- **Visibility:** PUBLIC works are listed. UNLISTED and PRIVATE works are readable only through secret links (there is no invite-by-account yet).
 - **Copy:** homepage and About copy are neutral placeholders in `src/lib/site.ts` and `src/app/(house)/about/page.tsx`, for you to replace.
 - **Uploads:** no image or cover uploads (Spark plan). Typographic covers are generated instead.
 - **Soft 404s:** unknown publication URLs render the not-found page with HTTP 200, because they stream under partial prerendering. Search engines get `noindex`.
