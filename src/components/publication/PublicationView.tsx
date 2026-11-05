@@ -29,7 +29,12 @@ export async function PublicationView({ collection, params }: { collection: Coll
               {work.title}
             </h1>
             {work.subtitle ? <p className="mt-4 text-2xl text-muted italic">{work.subtitle}</p> : null}
-            <p className="mt-6">by {work.authorName}</p>
+            <p className="mt-6">
+              by{" "}
+              <Link href={`/authors/${work.authorHandle}`} className="link-quiet">
+                {work.authorName}
+              </Link>
+            </p>
 
             {work.description ? <p className="mt-8 text-lg leading-relaxed">{work.description}</p> : null}
 

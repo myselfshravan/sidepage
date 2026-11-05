@@ -9,13 +9,13 @@ const COPY: Record<Collection, { eyebrow: string; title: string; intro: string; 
   memoirs: {
     eyebrow: "The memoir collection",
     title: "Memoirs",
-    intro: "Real life, written down while it can still be remembered: essays, recollections and the occasional letter to an earlier self.",
-    empty: "No memoirs are published yet. The first is still being set in type.",
+    intro: "Real lives, written down: essays, recollections and reflections.",
+    empty: "No memoirs published yet.",
   },
   fiction: {
     eyebrow: "The fiction collection",
     title: "Fiction",
-    intro: "Invented lives, released chapter by chapter. Dark romance, mostly. Content warnings are always shown before you begin.",
+    intro: "Invented lives, released chapter by chapter. Content warnings are always shown before you begin.",
     empty: "No fiction has been released yet.",
   },
 };
@@ -47,6 +47,7 @@ export async function CollectionIndex({ collection }: { collection: Collection }
                     <p className="meta">{[w.writtenLabel, chapterLabel(w.chapterCount), formatMinutes(w.readingMinutes)].filter(Boolean).join(" · ")}</p>
                     <h2 className="font-display text-3xl leading-tight group-hover:text-accent-ink">{w.title}</h2>
                     {w.subtitle ? <p className="text-lg text-muted italic">{w.subtitle}</p> : null}
+                    <p className="meta">by {w.authorName}</p>
                     {w.description ? <p className="max-w-2xl leading-relaxed">{w.description}</p> : null}
                     <p className="meta">Published {formatDate(w.firstPublishedAt)}</p>
                   </div>
@@ -62,6 +63,7 @@ export async function CollectionIndex({ collection }: { collection: Collection }
                   <Cover collection="fiction" title={w.title} subtitle={w.subtitle} author={w.authorName} className="!w-full transition-transform duration-300 ease-page group-hover:-translate-y-1" />
                   <div className="space-y-1">
                     <h2 className="credits text-sm group-hover:text-accent-ink">{w.title}</h2>
+                    <p className="meta">by {w.authorName}</p>
                     <p className="meta">
                       {chapterLabel(w.chapterCount)} · {formatMinutes(w.readingMinutes)}
                     </p>

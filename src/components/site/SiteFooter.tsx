@@ -8,7 +8,7 @@ export function SiteFooter() {
         <div className="space-y-2">
           <p className="font-display text-lg italic">{site.name}</p>
           <p className="meta max-w-md leading-relaxed">
-            {site.tagline} Set in Newsreader, Bodoni Moda, Crimson Pro and IBM Plex Mono.
+            {site.tagline}
           </p>
         </div>
         <nav aria-label="Footer" className="meta flex flex-wrap items-end gap-x-6 gap-y-2 uppercase">
@@ -22,7 +22,7 @@ export function SiteFooter() {
             Studio
           </Link>
           <span>
-            © {site.established} {site.author}
+            © {site.established} {site.name}
           </span>
         </nav>
       </div>

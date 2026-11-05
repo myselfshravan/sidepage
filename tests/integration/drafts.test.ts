@@ -16,7 +16,7 @@ import { applyCommand } from "@/server/services/publishing";
 import { createWork, duplicateWork, updateWorkMetadata } from "@/server/services/works";
 import { clearFirestore } from "../support/emulator";
 
-const author: Actor = { uid: "author-uid", kind: "author" };
+const author: Actor = { uid: "author-uid", kind: "user", role: "author" };
 const t0 = new Date("2026-11-05T10:00:00Z");
 const at = (minutes: number) => new Date(t0.getTime() + minutes * 60_000);
 const doc = (text: string) => ({ type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text }] }] });
@@ -95,7 +95,7 @@ describe("works", () => {
     const w = await work(copy.workId);
     expect(w).toMatchObject({ status: "DRAFT", edition_count: 0, current_edition_id: null, duplicated_from: workId, slug: "original-copy" });
     expect(w.first_published_at).toBeNull();
-    const chapter = await getChapter(copy.workId, chapterId);
+    const chapter = await getChapter(author, copy.workId, chapterId);
     expect(JSON.stringify(chapter!.doc)).toContain("copied words");
   });
 });
@@ -109,7 +109,7 @@ describe("chapters and autosave", () => {
 
     const stale = await saveChapter(author, { workId, chapterId, baseRev: 1, title: "One", doc: doc("other tab") }, at(1));
     expect(stale).toMatchObject({ status: "conflict", serverRev: 2 });
-    expect(JSON.stringify((await getChapter(workId, chapterId))!.doc)).toContain("four words");
+    expect(JSON.stringify((await getChapter(author, workId, chapterId))!.doc)).toContain("four words");
   });
 
   it("rejects invalid manuscript JSON", async () => {
@@ -130,22 +130,22 @@ describe("chapters and autosave", () => {
       rev = r.rev;
     }
     // First save (no prior revision) and the one 12 minutes later.
-    expect((await listRevisions(workId, chapterId)).map((r) => r.kind)).toEqual(["AUTO", "AUTO"]);
+    expect((await listRevisions(author, workId, chapterId)).map((r) => r.kind)).toEqual(["AUTO", "AUTO"]);
     await checkpointChapter(author, workId, chapterId, at(13));
-    expect((await listRevisions(workId, chapterId))[0]!.kind).toBe("CHECKPOINT");
+    expect((await listRevisions(author, workId, chapterId))[0]!.kind).toBe("CHECKPOINT");
   });
 
   it("restores a revision and keeps the replaced draft", async () => {
     const { workId } = await createWork(author, { collection: "memoirs", title: "W" }, t0);
     const { chapterId } = await createChapter(author, workId, "One", t0);
     await saveChapter(author, { workId, chapterId, baseRev: 1, title: "One", doc: doc("original version") }, t0);
-    const [original] = await listRevisions(workId, chapterId);
+    const [original] = await listRevisions(author, workId, chapterId);
     await saveChapter(author, { workId, chapterId, baseRev: 2, title: "One", doc: doc("rewritten version") }, at(1));
 
     const { rev } = await restoreRevision(author, { workId, chapterId, revisionId: original!.id, baseRev: 3 }, at(2));
     expect(rev).toBe(4);
-    expect(JSON.stringify((await getChapter(workId, chapterId))!.doc)).toContain("original version");
-    const kinds = (await listRevisions(workId, chapterId)).map((r) => r.kind);
+    expect(JSON.stringify((await getChapter(author, workId, chapterId))!.doc)).toContain("original version");
+    const kinds = (await listRevisions(author, workId, chapterId)).map((r) => r.kind);
     expect(kinds[0]).toBe("BEFORE_RESTORE");
   });
 
@@ -155,7 +155,7 @@ describe("chapters and autosave", () => {
     const b = await createChapter(author, workId, "Beta", t0);
     await saveChapter(author, { workId, chapterId: b.chapterId, baseRev: 1, title: "Beta", doc: doc("two words") }, t0);
     await reorderChapters(author, workId, [b.chapterId, a.chapterId], at(1));
-    expect((await listChapters(workId, (await work(workId)).chapter_order)).map((c) => c.slug)).toEqual(["beta", "alpha"]);
+    expect((await listChapters(author, workId)).map((c) => c.slug)).toEqual(["beta", "alpha"]);
     await expect(reorderChapters(author, workId, [a.chapterId], at(2))).rejects.toMatchObject({ code: "CONFLICT" });
 
     await deleteChapter(author, workId, b.chapterId, at(3));
@@ -169,7 +169,7 @@ describe("chapters and autosave", () => {
     const { workId } = await createWork(author, { collection: "fiction", title: "W" }, t0);
     await createChapter(author, workId, "Interlude", t0);
     const second = await createChapter(author, workId, "Interlude", t0);
-    expect((await getChapter(workId, second.chapterId))!.slug).toBe("interlude-2");
+    expect((await getChapter(author, workId, second.chapterId))!.slug).toBe("interlude-2");
   });
 
   it("blocks editing while scheduled or archived", async () => {

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createWorkAction } from "@/app/studio/actions";
+import { track } from "@/lib/analytics";
 import { Button, Field, inputClass } from "./ui";
 
 export function NewPublicationForm() {
@@ -18,8 +19,10 @@ export function NewPublicationForm() {
         const data = new FormData(e.currentTarget);
         setBusy(true);
         setError(undefined);
-        const result = await createWorkAction({ collection: String(data.get("collection")), title: String(data.get("title")) });
+        const collection = String(data.get("collection")) === "fiction" ? "fiction" : "memoirs";
+        const result = await createWorkAction({ collection, title: String(data.get("title")) });
         if (result.ok) {
+          track("publication_created", { work_id: result.value.workId, collection });
           router.push(`/studio/publications/${result.value.workId}`);
         } else {
           setError(result.message);

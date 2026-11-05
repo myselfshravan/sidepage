@@ -4,17 +4,18 @@ import { ButtonLink, StatusBadge, VisibilityBadge } from "@/components/studio/ui
 import { COLLECTION_LABEL, STATUSES, type Status } from "@/domain/types";
 import { formatDate } from "@/lib/format";
 import { listWorks } from "@/server/services/works";
-import { requireAuthorPage } from "@/server/auth/session";
+import { requireWriterPage } from "@/server/auth/session";
+import { actorFrom } from "@/server/services/actor";
 
 export const metadata: Metadata = { title: "Publications" };
 
 export default async function PublicationsPage({ searchParams }: PageProps<"/studio/publications">) {
   // Pages render in parallel with the layout, so each one authorises itself.
-  await requireAuthorPage();
+  const actor = actorFrom(await requireWriterPage());
   const params = await searchParams;
   const status = typeof params.status === "string" && (STATUSES as readonly string[]).includes(params.status) ? (params.status as Status) : undefined;
   const after = typeof params.after === "string" ? params.after : undefined;
-  const { items, next } = await listWorks({ status, after });
+  const { items, next } = await listWorks(actor, { status, after });
   const filterHref = (s?: Status) => (s ? `/studio/publications?status=${s}` : "/studio/publications");
 
   return (

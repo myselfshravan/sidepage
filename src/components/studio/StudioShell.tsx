@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { SignOutButton } from "./SignOutButton";
 
-export function StudioShell({ email, children }: { email: string; children: ReactNode }) {
+export function StudioShell({ email, isAdmin, children }: { email: string; isAdmin: boolean; children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
       <header className="border-b border-rule bg-surface">
@@ -18,6 +18,11 @@ export function StudioShell({ email, children }: { email: string; children: Reac
               <Link href="/studio/publications" className="text-muted hover:text-ink">
                 Publications
               </Link>
+              {isAdmin ? (
+                <Link href="/studio/admin" className="text-muted hover:text-ink">
+                  Admin
+                </Link>
+              ) : null}
               <Link href="/" className="text-muted hover:text-ink">
                 View site
               </Link>

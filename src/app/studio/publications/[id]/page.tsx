@@ -11,18 +11,19 @@ import { COLLECTION_LABEL } from "@/domain/types";
 import { formatDateInZone, formatWords } from "@/lib/format";
 import { listChapters } from "@/server/services/chapters";
 import { listEditions } from "@/server/services/publishing";
-import { getWork, listEvents } from "@/server/services/works";
-import { requireAuthorPage } from "@/server/auth/session";
+import { getManagedWork, listEvents } from "@/server/services/works";
+import { requireWriterPage } from "@/server/auth/session";
+import { actorFrom } from "@/server/services/actor";
 
 export const metadata: Metadata = { title: "Publication" };
 
 export default async function PublicationPage({ params }: PageProps<"/studio/publications/[id]">) {
   // Pages render in parallel with the layout, so each one authorises itself.
-  await requireAuthorPage();
+  const actor = actorFrom(await requireWriterPage());
   const { id } = await params;
-  const work = await getWork(id);
+  const work = await getManagedWork(actor, id);
   if (!work) notFound();
-  const [chapters, editions, events] = await Promise.all([listChapters(id, work.chapter_order), listEditions(id), listEvents(id)]);
+  const [chapters, editions, events] = await Promise.all([listChapters(actor, id), listEditions(actor, id), listEvents(actor, id)]);
   const tz = work.timezone;
   const iso = (t: { toDate(): Date } | null) => (t ? t.toDate().toISOString() : null);
   const publicHref = `/${work.collection}/${work.slug}`;

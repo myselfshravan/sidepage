@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { Suspense } from "react";
+import { AccountNav } from "./AccountNav";
 import { site } from "@/lib/site";
 
 const NAV = [
@@ -28,6 +30,11 @@ export function SiteHeader({ current }: { current?: (typeof NAV)[number]["href"]
                 </Link>
               </li>
             ))}
+            <li className="border-l border-rule pl-6">
+              <Suspense fallback={<span className="inline-block w-12" />}>
+                <AccountNav />
+              </Suspense>
+            </li>
           </ul>
         </nav>
       </div>

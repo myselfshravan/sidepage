@@ -3,16 +3,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChapterEditor } from "@/components/editor/ChapterEditor";
 import { getChapter } from "@/server/services/chapters";
-import { getWork } from "@/server/services/works";
-import { requireAuthorPage } from "@/server/auth/session";
+import { getManagedWork } from "@/server/services/works";
+import { requireWriterPage } from "@/server/auth/session";
+import { actorFrom } from "@/server/services/actor";
 
 export const metadata: Metadata = { title: "Editing" };
 
 export default async function ChapterEditPage({ params }: PageProps<"/studio/publications/[id]/chapters/[chapterId]">) {
   // Pages render in parallel with the layout, so each one authorises itself.
-  await requireAuthorPage();
+  const actor = actorFrom(await requireWriterPage());
   const { id, chapterId } = await params;
-  const [work, chapter] = await Promise.all([getWork(id), getChapter(id, chapterId)]);
+  const work = await getManagedWork(actor, id);
+  const chapter = work ? await getChapter(actor, id, chapterId) : null;
   if (!work || !chapter) notFound();
   const readOnly = work.status === "SCHEDULED" || work.status === "ARCHIVED";
 

@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
+import { AnalyticsStart } from "@/components/site/AnalyticsStart";
 import { site } from "@/lib/site";
 import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: { default: `${site.name} — ${site.author}`, template: `%s · ${site.name}` },
+  title: { default: site.name, template: `%s · ${site.name}` },
   description: site.tagline,
   applicationName: site.name,
-  authors: [{ name: site.author }],
   openGraph: { siteName: site.name, type: "website" },
 };
 
@@ -28,6 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           Skip to content
         </a>
         {children}
+        <AnalyticsStart />
       </body>
     </html>
   );

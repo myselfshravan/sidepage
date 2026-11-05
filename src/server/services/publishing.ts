@@ -21,7 +21,7 @@ import {
   type WorkDoc,
 } from "../firebase/model";
 import type { Actor } from "./actor";
-import { event, getWorkOrThrow } from "./works";
+import { assertManages, event, getWorkOrThrow, requireManagedWork } from "./works";
 
 // Publishing in two phases:
 //
@@ -120,6 +120,7 @@ export async function applyCommand(actor: Actor, workId: string, command: Comman
   const first = await col.work(workId).get();
   if (!first.exists) throw new AppError("NOT_FOUND", "That publication doesn't exist.");
   const work = first.data() as WorkDoc;
+  assertManages(actor, work);
   const preview = runMachine(work, command, now);
   if (!preview.seal) return commitWithoutSeal(actor, workId, command, now);
 
@@ -138,17 +139,17 @@ export async function applyCommand(actor: Actor, workId: string, command: Comman
   const number = work.edition_count + 1;
   const id = makeEditionId(workId, number);
   const token = randomBytes(12).toString("hex");
-  await claimEdition(workId, id, number, token, snapshot, preview.seal.effectiveAt, now);
+  await claimEdition(actor, workId, id, number, token, snapshot, preview.seal.effectiveAt, now);
   await writeParts(id, token, snapshot);
   const outcome = await commitSeal(actor, workId, id, number, token, snapshot, command, now);
   await deleteLosingParts(id, token).catch(() => undefined);
   return outcome;
 }
 
-async function claimEdition(workId: string, id: string, number: number, token: string, snapshot: Snapshot, effectiveAt: Date, now: Date) {
+async function claimEdition(actor: Actor, workId: string, id: string, number: number, token: string, snapshot: Snapshot, effectiveAt: Date, now: Date) {
   const ts = Timestamp.fromDate(now);
   await db().runTransaction(async (tx) => {
-    const { work } = await getWorkOrThrow(tx, workId);
+    const { work } = await getWorkOrThrow(tx, workId, actor);
     const existing = await tx.get(col.edition(id));
     if ((existing.data() as EditionDoc | undefined)?.state === "SEALED" || work.edition_count >= number) {
       throw new AppError("CONFLICT", "Another publish finished first. Reload to see it.");
@@ -220,7 +221,7 @@ async function commitSeal(
 ): Promise<TransitionOutcome> {
   const ts = Timestamp.fromDate(now);
   return db().runTransaction(async (tx) => {
-    const { ref, work } = await getWorkOrThrow(tx, workId);
+    const { ref, work } = await getWorkOrThrow(tx, workId, actor);
     const editionSnap = await tx.get(col.edition(id));
     const edition = editionSnap.data() as EditionDoc | undefined;
     if (!edition || edition.state !== "SEALING" || edition.seal_token !== token) {
@@ -229,6 +230,7 @@ async function commitSeal(
     if (work.draft_version !== snapshot.draftVersion || work.edition_count !== number - 1) {
       throw new AppError("CONFLICT", "The draft changed while publishing. Try again.");
     }
+    const owner = await tx.get(col.user(work.owner_uid));
     const t = runMachine(work, command, now);
     if (!t.seal) throw new AppError("CONFLICT", "The publication changed state while publishing.");
 
@@ -246,7 +248,7 @@ async function commitSeal(
       last_published_at: effective,
       last_publish_executed_at: ts,
     });
-    writePublished(tx, workId, work, { editionId: id, first, last: effective, now: ts, snapshot });
+    writePublished(tx, workId, work, { editionId: id, first, last: effective, now: ts, snapshot, authorHandle: (owner.get("handle") as string | undefined) ?? "" });
     tx.create(col.events(workId).doc(), event(actor, t.event, ts, { from_status: work.status, to_status: t.next.status, edition_id: id, effective_at: effective }));
     return { status: t.next.status, editionId: id, tags: tagsFor(workId, work.slug) };
   });
@@ -256,11 +258,13 @@ function writePublished(
   tx: Transaction,
   workId: string,
   work: WorkDoc,
-  p: { editionId: string; first: Timestamp; last: Timestamp; now: Timestamp; snapshot: Snapshot },
+  p: { editionId: string; first: Timestamp; last: Timestamp; now: Timestamp; snapshot: Snapshot; authorHandle: string },
 ) {
   const m = p.snapshot.metadata;
   const doc: PublishedDoc = {
     work_id: workId,
+    owner_uid: work.owner_uid,
+    author_handle: p.authorHandle,
     collection: m.collection,
     slug: m.slug,
     visibility: work.visibility,
@@ -288,7 +292,7 @@ function writePublished(
 async function commitWithoutSeal(actor: Actor, workId: string, command: Command, now: Date, reuseEdition?: string): Promise<TransitionOutcome> {
   const ts = Timestamp.fromDate(now);
   return db().runTransaction(async (tx) => {
-    const { ref, work } = await getWorkOrThrow(tx, workId);
+    const { ref, work } = await getWorkOrThrow(tx, workId, actor);
     const pubRef = col.publishedDoc(workId);
     const pubSnap = await tx.get(pubRef);
     const t = runMachine(work, command, now);
@@ -384,7 +388,8 @@ export async function runDueSchedules(actor: Actor, now = new Date(), limit = 25
 
 export type EditionSummary = { id: string; number: number; effectivePublishedAt: string; sealedAt: string; words: number; chapters: number; hash: string };
 
-export async function listEditions(workId: string): Promise<EditionSummary[]> {
+export async function listEditions(actor: Actor, workId: string): Promise<EditionSummary[]> {
+  await requireManagedWork(actor, workId);
   const snap = await col.editions().where("work_id", "==", workId).orderBy("number", "desc").limit(100).get();
   return snap.docs
     .map((d) => [d.id, d.data() as EditionDoc] as const)

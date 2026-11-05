@@ -13,7 +13,9 @@ import {
   type Progress,
   type ReaderPrefs,
 } from "./prefs";
+import { readerOp, useReaderAccount } from "./account";
 import { parseJson, setStored, useHydrated, useStored } from "./storage";
+import { track } from "@/lib/analytics";
 
 type TocItem = { slug: string; title: string; ordinal: number };
 
@@ -28,6 +30,9 @@ type Props = {
 
 type Panel = null | "contents" | "settings";
 
+/** Signed-in progress is sent at most this often while reading (and once as the page closes). */
+const REMOTE_PROGRESS_MS = 15_000;
+
 export function ReaderShell({ workId, base, workTitle, chapter, toc, children }: Props) {
   const articleRef = useRef<HTMLDivElement>(null);
   const [panel, setPanel] = useState<Panel>(null);
@@ -38,7 +43,14 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
   const hydrated = useHydrated();
   const prefs = parsePrefs(parseJson<Partial<ReaderPrefs> | null>(useStored(PREFS_KEY), null));
   const storedBookmarks = useStored(bookmarksKey(workId));
-  const bookmarks = parseJson<Bookmark[]>(storedBookmarks, []).slice(0, MAX_BOOKMARKS);
+  const { state: account, reload: reloadAccount } = useReaderAccount(workId);
+  const signedIn = account.status === "signed-in";
+  // Signed in: bookmarks live on the account. Otherwise: on this device.
+  const bookmarks: (Bookmark & { id?: string })[] =
+    account.status === "signed-in" ? account.bookmarks : parseJson<Bookmark[]>(storedBookmarks, []).slice(0, MAX_BOOKMARKS);
+  const remoteProgress = account.status === "signed-in" ? account.progress : null;
+  const chapterIndex = toc.findIndex((t) => t.slug === chapter.slug);
+  const isLastChapter = chapterIndex === toc.length - 1;
 
   // Keep <html> attributes in step with the stored preferences (covers client-side navigation).
   const prefsKey = JSON.stringify(prefs);
@@ -46,18 +58,29 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
 
   // Resume: `#resume` scrolls to where the reader left this chapter.
   useEffect(() => {
-    if (window.location.hash !== "#resume") return;
-    const saved = parseJson<Progress | null>(localStorage.getItem(progressKey(workId)), null);
+    if (window.location.hash !== "#resume" || account.status === "loading") return;
+    const saved = remoteProgress ?? parseJson<Progress | null>(localStorage.getItem(progressKey(workId)), null);
     const el = articleRef.current;
     if (!saved || saved.chapter !== chapter.slug || !el) return;
     const top = el.getBoundingClientRect().top + window.scrollY;
     window.scrollTo({ top: top + saved.fraction * el.offsetHeight - window.innerHeight * 0.3 });
     history.replaceState(null, "", window.location.pathname);
-  }, [workId, chapter.slug]);
+  }, [workId, chapter.slug, account.status, remoteProgress]);
 
-  // Reading progress: measured on scroll, persisted locally at most every 1.5 s.
+  useEffect(() => track("read_started", { work_id: workId, chapter_index: chapterIndex }), [workId, chapterIndex]);
+
+  // Reading progress: measured on scroll, kept on this device at most every 1.5 s and,
+  // for signed-in readers, on the account every 15 s and when the page is hidden.
   useEffect(() => {
     let lastWrite = 0;
+    let lastRemote = 0;
+    let latest = 0;
+    let finished = false;
+    const sendRemote = (keepalive = false) => {
+      if (!signedIn) return;
+      lastRemote = Date.now();
+      void readerOp({ op: "progress", data: { workId, chapterSlug: chapter.slug, chapterTitle: chapter.title, fraction: latest } }, { keepalive });
+    };
     let lastY = window.scrollY;
     let frame = 0;
     const measure = () => {
@@ -67,7 +90,12 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
       const rect = el.getBoundingClientRect();
       const total = Math.max(1, rect.height - window.innerHeight * 0.6);
       const fraction = Math.min(1, Math.max(0, -rect.top / total));
+      latest = fraction;
       setProgress(fraction);
+      if (isLastChapter && fraction > 0.98 && !finished) {
+        finished = true;
+        track("read_finished", { work_id: workId });
+      }
       const y = window.scrollY;
       setChromeHidden(y > lastY && y > 200);
       lastY = y;
@@ -77,17 +105,23 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
         const progress: Progress = { chapter: chapter.slug, title: chapter.title, fraction, at: now };
         setStored(progressKey(workId), JSON.stringify(progress));
       }
+      if (now - lastRemote > REMOTE_PROGRESS_MS && latest > 0) sendRemote();
     };
     const onScroll = () => {
       if (!frame) frame = requestAnimationFrame(measure);
     };
+    const onHide = () => {
+      if (document.visibilityState === "hidden" && latest > 0) sendRemote(true);
+    };
     measure();
     window.addEventListener("scroll", onScroll, { passive: true });
+    document.addEventListener("visibilitychange", onHide);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      document.removeEventListener("visibilitychange", onHide);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [workId, chapter.slug, chapter.title]);
+  }, [workId, chapter.slug, chapter.title, signedIn, isLastChapter]);
 
   useEffect(() => {
     const onChange = () => setFullscreen(document.fullscreenElement !== null);
@@ -115,18 +149,29 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
     }
   }, []);
 
-  const addBookmark = useCallback(() => {
+  const addBookmark = useCallback(async () => {
     const blocks = articleRef.current?.querySelectorAll<HTMLElement>("[data-block]") ?? [];
     const block = Array.from(blocks).find((b) => b.getBoundingClientRect().bottom > 80);
     if (!block) return;
     const excerpt = (block.textContent ?? "").trim().slice(0, 120);
-    const item: Bookmark = { chapter: chapter.slug, title: chapter.title, block: block.id, excerpt, at: Date.now() };
-    const next = [item, ...bookmarks.filter((b) => !(b.chapter === item.chapter && b.block === item.block))];
-    setStored(bookmarksKey(workId), JSON.stringify(next.slice(0, MAX_BOOKMARKS)));
-    setNotice("Bookmarked. Find it under Contents.");
-  }, [bookmarks, chapter.slug, chapter.title, workId]);
+    if (signedIn) {
+      const r = await readerOp({ op: "bookmark.add", data: { workId, chapterSlug: chapter.slug, chapterTitle: chapter.title, block: block.id, excerpt } });
+      if (!r.ok) return setNotice(r.message ?? "Couldn't save the bookmark.");
+      await reloadAccount();
+    } else {
+      const item: Bookmark = { chapter: chapter.slug, title: chapter.title, block: block.id, excerpt, at: Date.now() };
+      const next = [item, ...bookmarks.filter((b) => !(b.chapter === item.chapter && b.block === item.block))];
+      setStored(bookmarksKey(workId), JSON.stringify(next.slice(0, MAX_BOOKMARKS)));
+    }
+    setNotice(signedIn ? "Bookmarked to your account." : "Bookmarked on this device. Sign in to keep bookmarks everywhere.");
+  }, [bookmarks, chapter.slug, chapter.title, workId, signedIn, reloadAccount]);
 
-  const removeBookmark = (b: Bookmark) => {
+  const removeBookmark = async (b: Bookmark & { id?: string }) => {
+    if (signedIn && b.id) {
+      await readerOp({ op: "bookmark.remove", id: b.id });
+      await reloadAccount();
+      return;
+    }
     const next = bookmarks.filter((x) => !(x.chapter === b.chapter && x.block === b.block));
     setStored(bookmarksKey(workId), JSON.stringify(next));
   };
@@ -167,7 +212,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
             <button type="button" className={`${toolbarButton} inline-flex`} aria-label="Reading settings" aria-expanded={panel === "settings"} aria-controls="reader-settings" onClick={() => setPanel(panel === "settings" ? null : "settings")}>
               Aa
             </button>
-            <button type="button" className={`${toolbarButton} inline-flex`} onClick={addBookmark} disabled={!hydrated}>
+            <button type="button" className={`${toolbarButton} inline-flex`} onClick={() => void addBookmark()} disabled={!hydrated || account.status === "loading"}>
               Bookmark
             </button>
             <button type="button" className={`${toolbarButton} hidden sm:inline-flex`} aria-pressed={fullscreen} onClick={toggleFullscreen}>
@@ -229,7 +274,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
                         <span className="meta block">{b.title}</span>
                         {b.excerpt}…
                       </Link>
-                      <button type="button" className="meta min-h-11 px-2 uppercase hover:text-danger" onClick={() => removeBookmark(b)} aria-label={`Remove bookmark in ${b.title}`}>
+                      <button type="button" className="meta min-h-11 px-2 uppercase hover:text-danger" onClick={() => void removeBookmark(b)} aria-label={`Remove bookmark in ${b.title}`}>
                         Remove
                       </button>
                     </li>

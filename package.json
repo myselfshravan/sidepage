@@ -14,10 +14,10 @@
     "test:emulated": "firebase emulators:exec --project demo-sidepage --only auth,firestore,storage \"vitest run --project integration --project rules\"",
     "test:e2e": "playwright test",
     "seed": "tsx --conditions=react-server scripts/seed.ts",
-    "grant-author": "tsx --conditions=react-server scripts/grant-author.ts",
     "check:secrets": "bash scripts/check-secrets.sh",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:secrets",
-    "check:credentials": "tsx --conditions=react-server scripts/check-credentials.ts"
+    "check:credentials": "tsx --conditions=react-server scripts/check-credentials.ts",
+    "grant-admin": "tsx --conditions=react-server scripts/grant-admin.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.4.0",
@@ -34,6 +34,7 @@
     "google-auth-library": "^11.3.3",
     "motion": "^14.9.1",
     "next": "16.4.5",
+    "posthog-js": "^1.447.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "server-only": "^0.0.1",

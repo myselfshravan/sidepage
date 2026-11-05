@@ -7,7 +7,7 @@ import { createWork, setVisibility, updateWorkMetadata } from "@/server/services
 import { getPublicChapter, getPublicWork, listPublicWorks } from "@/server/read/public";
 import { clearFirestore } from "../support/emulator";
 
-const author: Actor = { uid: "author-uid", kind: "author" };
+const author: Actor = { uid: "author-uid", kind: "user", role: "author" };
 const t0 = new Date("2026-11-05T10:00:00Z");
 const at = (minutes: number) => new Date(t0.getTime() + minutes * 60_000);
 
@@ -86,7 +86,7 @@ describe("publishing an edition", () => {
     expect(w.last_published_at!.toDate()).toEqual(at(3));
     const pub = await getPublicChapter("memoirs", w.slug, "arrival");
     expect(JSON.stringify(pub!.chapter.doc)).toContain("Second edition text");
-    expect((await listEditions(workId)).map((e) => e.number)).toEqual([2, 1]);
+    expect((await listEditions(author, workId)).map((e) => e.number)).toEqual([2, 1]);
   });
 
   it("refuses to republish identical content", async () => {

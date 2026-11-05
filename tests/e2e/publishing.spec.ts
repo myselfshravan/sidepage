@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
-import { signInAsAuthor, unique, writeChapter } from "./helpers";
+import { ACCOUNTS } from "./global-setup";
+import { signInAs, unique, writeChapter } from "./helpers";
 
 test("the complete publishing journey: write, autosave, backdate, publish, read, republish", async ({ page, browser }) => {
   const title = unique("Harbour Lights");
-  await signInAsAuthor(page);
+  await signInAs(page, ACCOUNTS.mira, /\/studio$/);
 
   // Create a memoir.
-  await page.getByLabel("Title").fill(title);
+  await page.getByRole("textbox", { name: "Title" }).fill(title);
   await page.getByRole("button", { name: "Create draft" }).click();
   await expect(page.getByRole("heading", { name: title })).toBeVisible();
   const studioUrl = page.url();
@@ -42,6 +43,7 @@ test("the complete publishing journey: write, autosave, backdate, publish, read,
   const reader = await (await browser.newContext()).newPage();
   await reader.goto(slug);
   await expect(reader.getByRole("heading", { name: title })).toBeVisible();
+  await expect(reader.getByRole("link", { name: "Mira Sample" })).toBeVisible();
   await expect(reader.getByText("c. June 1998")).toBeVisible();
   await expect(reader.getByText("15 August 2004")).toBeVisible();
   await reader.getByRole("link", { name: "Begin reading" }).click();
@@ -75,12 +77,12 @@ test("the complete publishing journey: write, autosave, backdate, publish, read,
 
 test("the studio is closed to visitors without a session", async ({ page, request }) => {
   await page.goto("/studio");
-  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page).toHaveURL(/\/sign-in(\?|$)/);
 
   // A forged cookie gets nothing either.
   await page.context().addCookies([{ name: "__session", value: "forged", url: test.info().project.use.baseURL! }]);
   await page.goto("/studio");
-  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page).toHaveURL(/\/sign-in(\?|$)/);
 
   // The session endpoint refuses cross-site requests.
   const res = await request.post("/api/auth/session", { headers: { origin: "https://evil.example" }, data: { idToken: "x" } });
@@ -91,7 +93,7 @@ test("the studio is closed to visitors without a session", async ({ page, reques
 });
 
 test("signing out ends the session on the server", async ({ page }) => {
-  await signInAsAuthor(page);
+  await signInAs(page, ACCOUNTS.mira, /\/studio$/);
   const cookies = await page.context().cookies();
   const session = cookies.find((c) => c.name === "__session");
   expect(session?.httpOnly).toBe(true);
@@ -99,10 +101,32 @@ test("signing out ends the session on the server", async ({ page }) => {
 
   await page.waitForTimeout(1100); // revocation has one-second granularity
   await page.getByRole("button", { name: "Sign out" }).click();
-  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page).toHaveURL(/\/sign-in(\?|$)/);
 
   // Replaying the old cookie no longer works: the refresh tokens were revoked.
   await page.context().addCookies([{ ...session!, expires: -1 }]);
   await page.goto("/studio");
-  await expect(page).toHaveURL(/\/sign-in$/);
+  await expect(page).toHaveURL(/\/sign-in(\?|$)/);
+});
+
+test("readers can't enter the studio, and authors can't open each other's drafts", async ({ page, browser }) => {
+  // Mira creates a draft and notes its URL.
+  await signInAs(page, ACCOUNTS.mira, /\/studio$/);
+  await page.getByRole("textbox", { name: "Title" }).fill(unique("Mira Secret"));
+  await page.getByRole("button", { name: "Create draft" }).click();
+  await expect(page).toHaveURL(/\/studio\/publications\//);
+  const draftUrl = new URL(page.url()).pathname;
+
+  // A reader is sent to their account page.
+  const readerPage = await (await browser.newContext()).newPage();
+  await signInAs(readerPage, ACCOUNTS.reader, /\/library$/);
+  await readerPage.goto("/studio");
+  await expect(readerPage).toHaveURL(/\/account$/);
+
+  // Another author gets "not found" for Mira's draft.
+  const theoPage = await (await browser.newContext()).newPage();
+  await signInAs(theoPage, ACCOUNTS.theo, /\/studio$/);
+  await theoPage.goto(draftUrl);
+  await expect(theoPage.getByText(/not found|isn't on the shelf|could not be found/i).first()).toBeVisible();
+  await expect(theoPage.getByRole("heading", { name: /Mira Secret/ })).toHaveCount(0);
 });

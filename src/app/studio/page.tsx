@@ -4,12 +4,13 @@ import { Panel, StatusBadge } from "@/components/studio/ui";
 import { COLLECTION_LABEL } from "@/domain/types";
 import { formatDateInZone } from "@/lib/format";
 import { dashboardStats, DEFAULT_TIMEZONE } from "@/server/services/works";
-import { requireAuthorPage } from "@/server/auth/session";
+import { requireWriterPage } from "@/server/auth/session";
+import { actorFrom } from "@/server/services/actor";
 
 export default async function DashboardPage() {
   // Pages render in parallel with the layout, so each one authorises itself.
-  await requireAuthorPage();
-  const stats = await dashboardStats();
+  const actor = actorFrom(await requireWriterPage());
+  const stats = await dashboardStats(actor);
   const tiles = [
     ["Publications", stats.total],
     ["Drafts", stats.drafts],

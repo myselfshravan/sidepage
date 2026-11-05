@@ -1,6 +1,6 @@
 # sidepage
 
-An independent digital publishing house for one author: a **memoir** collection and a **fiction** collection on a shared publishing engine, an **Author Studio** for writing and publishing, and a reader built for long attention.
+A publishing platform for memoir and fiction. Anyone can sign up to read; approved authors write and publish in the **studio**; every piece is published as an immutable edition and read in a reader built for long attention.
 
 Every piece is a publication, not a post. It has immutable editions, historical dates that mean what they say, and an event history.
 
@@ -14,7 +14,7 @@ Every piece is a publication, not a post. It has immutable editions, historical 
 
 ## Stack
 
-Next.js 16 (App Router, Cache Components), React 19, TypeScript (strict), Tailwind CSS 4, Tiptap 3, Firebase Auth, Cloud Firestore and Storage (Admin SDK on the server only), Zod, Vitest, Playwright, GitHub Actions, Vercel.
+Next.js 16 (App Router, Cache Components), React 19, TypeScript (strict), Tailwind CSS 4, Tiptap 3, Firebase Auth, Cloud Firestore and Storage (Admin SDK on the server only), Zod, PostHog, Vitest, Playwright, GitHub Actions, Vercel.
 
 ## Run it locally
 
@@ -29,7 +29,7 @@ pnpm seed                         # terminal 2: author account + sample publicat
 pnpm dev                          # http://localhost:3000
 ```
 
-Sign in at `/sign-in` with `AUTHOR_EMAIL` and the password `sidepage-local-only`. The email form appears only in emulator mode. Seed data is placeholder text and refuses to run against a real project.
+Seeded accounts (password `sidepage-local-only`): `admin@`, `mira@` (author), `theo@` (author), `reader@sidepage.test`. Seed data is placeholder text and refuses to run against a real project. Make yourself an admin on a real project with `pnpm grant-admin <email>` after signing in once.
 
 ## Tests
 

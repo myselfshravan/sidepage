@@ -2,14 +2,34 @@ import "server-only";
 import type { Timestamp } from "@google-cloud/firestore";
 import type { EventType } from "@/domain/lifecycle/machine";
 import type { ManuscriptDoc } from "@/domain/manuscript/schema";
+import type { AuthorStatus, Role } from "@/domain/access/policy";
 import type { Collection, PartialDate, Status, Visibility } from "@/domain/types";
 import { db } from "./admin";
 
 // Firestore document shapes. See docs/DATA_MODEL.md for responsibilities,
 // relationships and access rules. Field names are snake_case to match the stored data.
 
-/** Author-only workspace. Never read by public code paths. */
+/** A person's account profile. Roles are read from here on every request. */
+export type UserDoc = {
+  handle: string;
+  display_name: string;
+  bio: string;
+  /** Private: never rendered on public pages. */
+  email: string;
+  role: Role;
+  author_status: AuthorStatus;
+  author_request: { pitch: string; requested_at: Timestamp } | null;
+  author_decided_by: string | null;
+  author_decided_at: Timestamp | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+export type HandleDoc = { uid: string };
+
+/** The owning author's workspace for a publication. Never read by public code paths. */
 export type WorkDoc = {
+  owner_uid: string;
   collection: Collection;
   slug: string;
   title: string;
@@ -138,6 +158,8 @@ export type EditionPartDoc = {
 /** The public read model. The only collection public pages read (plus sealed editions). */
 export type PublishedDoc = {
   work_id: string;
+  owner_uid: string;
+  author_handle: string;
   collection: Collection;
   slug: string;
   visibility: Visibility;
@@ -179,6 +201,9 @@ export const col = {
   publishedDoc: (workId: string) => db().collection("published").doc(workId),
   slug: (slug: string) => db().collection("slugs").doc(slug),
   rateLimit: (key: string) => db().collection("rate_limits").doc(key),
+  users: () => db().collection("users"),
+  user: (uid: string) => db().collection("users").doc(uid),
+  handle: (handle: string) => db().collection("handles").doc(handle),
 };
 
 export const editionId = (workId: string, number: number) => `${workId}-e${number}`;

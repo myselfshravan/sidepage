@@ -6,6 +6,7 @@ import { lifecycleAction, type CommandInput } from "@/app/studio/actions";
 import { instantToZonedWallTime } from "@/domain/dates/partial-date";
 import { allowedCommands } from "@/domain/lifecycle/machine";
 import type { Status } from "@/domain/types";
+import { track } from "@/lib/analytics";
 import { formatDateInZone } from "@/lib/format";
 import { Button, Field, inputClass, Panel } from "./ui";
 
@@ -37,6 +38,9 @@ export function PublishPanel({ workId, status, timezone, hasChapters, hasEdition
     setConfirming(null);
     startTransition(async () => {
       const result = await lifecycleAction(workId, input);
+      if (result.ok && (input.type === "publish" || input.type === "republish" || input.type === "schedule")) {
+        track("published", { work_id: workId, edition_id: result.value.editionId, kind: input.type });
+      }
       if (result.ok) {
         setMessage(success);
         router.refresh();

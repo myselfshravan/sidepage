@@ -11,7 +11,7 @@ const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 // Firebase Auth's sign-in popup needs Google's auth endpoints.
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://apis.google.com${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://apis.google.com https://us-assets.i.posthog.com${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://lh3.googleusercontent.com",
   "font-src 'self'",
@@ -20,6 +20,8 @@ const csp = [
     "https://identitytoolkit.googleapis.com",
     "https://securetoken.googleapis.com",
     "https://www.googleapis.com",
+    "https://us.i.posthog.com",
+    "https://us-assets.i.posthog.com",
     useEmulators ? "http://127.0.0.1:9099 http://localhost:9099" : "",
     isDev ? "ws://localhost:* ws://127.0.0.1:*" : "",
   ]

@@ -23,9 +23,9 @@ export async function POST(request: NextRequest) {
     await rateLimit(LIMITS.session, clientIp(request.headers));
     const parsed = body.safeParse(await request.json().catch(() => null));
     if (!parsed.success) throw new AppError("INVALID", "Malformed sign-in request.");
-    const { cookie } = await mintSessionCookie(parsed.data.idToken);
-    (await cookies()).set(SESSION_COOKIE, cookie, sessionCookieOptions(isSecure(request)));
-    return NextResponse.json({ ok: true }, { headers: noStore });
+    const { cookie, maxAgeMs, viewer } = await mintSessionCookie(parsed.data.idToken);
+    (await cookies()).set(SESSION_COOKIE, cookie, sessionCookieOptions(isSecure(request), maxAgeMs));
+    return NextResponse.json({ ok: true, role: viewer.role }, { headers: noStore });
   } catch (error) {
     return failure(error);
   }

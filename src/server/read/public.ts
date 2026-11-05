@@ -3,7 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { formatPartialDate } from "@/domain/dates/partial-date";
 import type { ManuscriptDoc } from "@/domain/manuscript/schema";
 import type { Collection } from "@/domain/types";
-import { col, partId, type EditionDoc, type EditionPartDoc, type PublishedDoc, type SlugDoc } from "../firebase/model";
+import { col, partId, type EditionDoc, type EditionPartDoc, type HandleDoc, type PublishedDoc, type SlugDoc, type UserDoc } from "../firebase/model";
 
 // Public reads. Everything here is cacheable and shared between all visitors, so it
 // may only return content that is PUBLISHED and PUBLIC. It reads `slugs`,
@@ -16,6 +16,8 @@ import { col, partId, type EditionDoc, type EditionPartDoc, type PublishedDoc, t
 
 export type PublicWork = {
   workId: string;
+  ownerUid: string;
+  authorHandle: string;
   editionId: string;
   collection: Collection;
   slug: string;
@@ -49,6 +51,8 @@ function isPublic(p: PublishedDoc | undefined): p is PublishedDoc {
 function toPublicWork(p: PublishedDoc): PublicWork {
   return {
     workId: p.work_id,
+    ownerUid: p.owner_uid,
+    authorHandle: p.author_handle,
     editionId: p.current_edition_id,
     collection: p.collection,
     slug: p.slug,
@@ -110,6 +114,32 @@ export async function listPublicWorks(collection: Collection | null, limit = PAG
   let query = col.published().where("listed", "==", true);
   if (collection) query = query.where("collection", "==", collection);
   const snap = await query.orderBy("sort_at", "desc").limit(Math.min(limit, 100)).get();
+  return snap.docs.map((d) => d.data() as PublishedDoc).filter(isPublic).map(toPublicWork);
+}
+
+export type PublicAuthor = { uid: string; handle: string; displayName: string; bio: string };
+
+/**
+ * A writer's public profile by handle. Only accounts that can write have public
+ * pages; readers' profiles are never exposed. Email is never returned.
+ */
+export async function getPublicAuthor(handle: string): Promise<PublicAuthor | null> {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`author:${handle}`);
+  const uid = ((await col.handle(handle).get()).data() as HandleDoc | undefined)?.uid;
+  if (!uid) return null;
+  const user = (await col.user(uid).get()).data() as UserDoc | undefined;
+  if (!user || user.role === "reader" || user.handle !== handle) return null;
+  return { uid, handle: user.handle, displayName: user.display_name, bio: user.bio };
+}
+
+/** Listed public works by one author, newest first. */
+export async function listPublicWorksByAuthor(ownerUid: string, limit = 48): Promise<PublicWork[]> {
+  "use cache";
+  cacheLife("max");
+  cacheTag("catalog", `owner:${ownerUid}`);
+  const snap = await col.published().where("listed", "==", true).where("owner_uid", "==", ownerUid).orderBy("sort_at", "desc").limit(Math.min(limit, 100)).get();
   return snap.docs.map((d) => d.data() as PublishedDoc).filter(isPublic).map(toPublicWork);
 }
 

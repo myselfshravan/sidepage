@@ -5,24 +5,26 @@ import { headers } from "next/headers";
 import { z } from "zod";
 import { zonedWallTimeToInstant } from "@/domain/dates/partial-date";
 import type { Command } from "@/domain/lifecycle/machine";
-import { requireAuthor } from "@/server/auth/session";
+import { requireAdmin, requireWriter } from "@/server/auth/session";
 import { AppError, asResult, type ActionResult } from "@/server/errors";
 import { assertSameOrigin } from "@/server/http/origin";
 import { LIMITS, rateLimit, type Limit } from "@/server/http/rate-limit";
-import { authorActor, type Actor } from "@/server/services/actor";
+import { actorFrom, type Actor } from "@/server/services/actor";
 import * as chapters from "@/server/services/chapters";
 import { applyCommand, tagsFor } from "@/server/services/publishing";
+import * as users from "@/server/services/users";
 import * as works from "@/server/services/works";
 import { timeZoneSchema } from "@/lib/validation/work";
 
 // Every action authorises itself: same-origin check, a live (revocation-checked)
-// author session, and a per-author rate limit. UI restrictions are never trusted.
+// session of an approved author, and a per-user rate limit. Ownership of the work
+// is then enforced inside each service. UI restrictions are never trusted.
 
 async function guard(limit: Limit = LIMITS.write): Promise<Actor> {
   assertSameOrigin(await headers());
-  const viewer = await requireAuthor();
+  const viewer = await requireWriter();
   await rateLimit(limit, viewer.uid);
-  return authorActor(viewer);
+  return actorFrom(viewer);
 }
 
 const id = z.string().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/);
@@ -130,8 +132,7 @@ export async function checkpointAction(workId: string, chapterId: string): Promi
 
 export async function listRevisionsAction(workId: string, chapterId: string): Promise<ActionResult<chapters.RevisionSummary[]>> {
   return asResult(async () => {
-    await guard();
-    return chapters.listRevisions(parseId(workId), parseId(chapterId));
+    return chapters.listRevisions(await guard(), parseId(workId), parseId(chapterId));
   });
 }
 
@@ -174,9 +175,32 @@ export async function setChapterSlugAction(workId: string, chapterId: string, sl
 
 export async function getRevisionAction(workId: string, chapterId: string, revisionId: string): Promise<ActionResult<{ title: string; doc: unknown }>> {
   return asResult(async () => {
-    await guard();
-    const rev = await chapters.getRevision(parseId(workId), parseId(chapterId), parseId(revisionId));
+    const rev = await chapters.getRevision(await guard(), parseId(workId), parseId(chapterId), parseId(revisionId));
     if (!rev) throw new AppError("NOT_FOUND", "That revision no longer exists.");
     return { title: rev.title, doc: rev.doc };
+  });
+}
+
+async function adminGuard(): Promise<Actor> {
+  assertSameOrigin(await headers());
+  const viewer = await requireAdmin();
+  await rateLimit(LIMITS.write, viewer.uid);
+  return actorFrom(viewer);
+}
+
+export async function decideAuthorshipAction(uid: string, approve: boolean): Promise<ActionResult> {
+  return asResult(async () => {
+    await users.decideAuthorship(await adminGuard(), parseId(uid), approve === true);
+    refresh();
+    return undefined;
+  });
+}
+
+export async function setRoleAction(uid: string, role: string): Promise<ActionResult> {
+  return asResult(async () => {
+    const actor = await adminGuard();
+    await users.setRole(actor, parseId(uid), role);
+    refresh();
+    return undefined;
   });
 }

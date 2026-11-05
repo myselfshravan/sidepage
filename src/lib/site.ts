@@ -1,10 +1,10 @@
-// The house's identity. Edit here; nothing else hardcodes it.
+// The platform's identity. All public-facing copy that isn't written by an author
+// lives here, so it can be replaced in one place.
 export const site = {
   name: "sidepage",
-  author: "Shravan Revanna",
-  tagline: "An independent house for memoir and fiction.",
+  // Placeholder description — replace with your own words.
+  tagline: "Memoir and fiction from independent authors.",
   established: 2026,
-  github: "https://github.com/myselfshravan",
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "",
   url: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
 } as const;

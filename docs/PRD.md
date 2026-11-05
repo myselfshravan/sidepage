@@ -2,39 +2,43 @@
 
 ## What sidepage is
 
-A boutique publishing house for one author, Shravan Revanna, combined with a digital library. It has two collections with distinct identities on one engine:
+A publishing platform for memoir and fiction. It has two collections with distinct identities on one engine:
 
 - **Memoirs.** Real experiences, essays and reflections. Intimate and editorial: warm ivory paper, serif type, archival captions.
-- **Fiction.** Literary fiction, initially dark romance. Cinematic: deep charcoal, burgundy, dramatic display type, content warnings before chapters.
+- **Fiction.** Literary fiction. Cinematic: deep charcoal, burgundy, dramatic display type, content warnings before chapters.
 
-## Users
+The platform is the identity. Every publication belongs to an author and links to their public page.
 
-| User | Needs |
+## People
+
+| Role | Can |
 |---|---|
-| The author | Write, revise, publish, re-date and republish without ever corrupting what readers already have. |
-| Public reader | Read comfortably on any device without an account. |
-| Invited reader *(later)* | Read private or unlisted work shared with them; lose access when it is revoked. |
+| Visitor | Read any public work without an account. |
+| Reader (anyone who signs up) | Sync progress and bookmarks across devices, save works to a library, follow authors, ask to become an author. |
+| Author (approved) | Write, revise, publish, re-date and republish their **own** publications in the studio. |
+| Admin | Approve or decline author requests, change roles, moderate any publication. |
 
-## Release 1: the publishing journey (this release)
+Sign-up is Google or email and password, and email must be verified.
 
-1. The author signs in to the Studio. Only the configured author account is allowed in.
-2. The author creates a publication in either collection.
-3. The author writes chapters in a rich-text editor. Autosave, revisions, word count, reading time and footnotes are included.
-4. The author records historical dates: when it was originally written (to whatever precision is remembered), when it was digitised, and a backdated publication date.
-5. The author publishes. Publication seals an **immutable edition**.
-6. Anyone can read it publicly, in a themed reader with typography controls, progress, bookmarks and a table of contents.
-7. The author keeps editing the draft. Readers still see the sealed edition.
-8. The author republishes as a new edition. Earlier editions remain sealed and unchanged.
-9. The full lifecycle: review, reject, schedule, cancel schedule, withdraw, archive, restore, duplicate.
+## Current release
+
+1. Sign-up and sign-in. A reader profile with a unique handle is created on first sign-in.
+2. Reader requests to write → admin approves → studio access, applied on the next request.
+3. Authors create publications in either collection and write chapters: autosave, revisions, word count, reading time, footnotes.
+4. Historical dates, the immutable-edition lifecycle, scheduling, withdraw, archive and restore, duplicate.
+5. Public reading in themed readers. Signed-in readers keep progress and bookmarks on their account.
+6. Library: continue reading, saved, new from followed authors.
+7. Author pages at `/authors/[handle]`; a platform homepage across all authors.
+8. Product analytics in PostHog. Events carry ids only.
 
 ## Deferred (designed for, not built yet)
 
-- Unlisted share links, private libraries, invitations, revocation and gift invitations
+- Unlisted share links and private, invite-only reading with revocation; gift invitations
 - Image and audio uploads and covers (need Cloud Storage, which needs the Blaze plan)
 - Memoir blocks (memory cards, archival photos, audio reflections) and fiction blocks (characters, relationships, timelines, letters)
 - Digitisation pipeline (OCR, structure extraction, AI review, human verification)
 - Exports (EPUB, PDF, DOCX, Markdown)
-- Analytics, error monitoring, email
+- Email notifications (new chapters from followed authors)
 
 See [ROADMAP.md](ROADMAP.md) for order and acceptance criteria.
 
@@ -42,5 +46,6 @@ See [ROADMAP.md](ROADMAP.md) for order and acceptance criteria.
 
 - Editing a draft never changes a published edition.
 - Publication dates (`first_published_at`, intended) are distinct from record dates (`created_at`) and from execution time (`last_publish_executed_at`).
-- Private writing never reaches analytics, logs, error reports, public metadata or the git repository.
+- Unpublished writing never reaches analytics, logs, public metadata or the git repository.
+- An author can never read or change another author's drafts.
 - Every access decision is made on the server.

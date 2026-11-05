@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { StudioShell } from "@/components/studio/StudioShell";
-import { requireAuthorPage } from "@/server/auth/session";
+import { requireWriterPage } from "@/server/auth/session";
 import { houseFonts, studioFonts } from "@/styles/fonts";
 
 export const metadata: Metadata = { title: { default: "Studio", template: "%s · Studio" }, robots: { index: false, follow: false } };
@@ -18,8 +18,12 @@ export default function StudioLayout({ children }: LayoutProps<"/studio">) {
 
 /** Every studio page renders inside this gate: no session, no studio. */
 async function AuthorGate({ children }: { children: React.ReactNode }) {
-  const viewer = await requireAuthorPage();
-  return <StudioShell email={viewer.email}>{children}</StudioShell>;
+  const viewer = await requireWriterPage();
+  return (
+    <StudioShell email={viewer.email} isAdmin={viewer.role === "admin"}>
+      {children}
+    </StudioShell>
+  );
 }
 
 function StudioLoading() {

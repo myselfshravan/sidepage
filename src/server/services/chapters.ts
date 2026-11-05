@@ -10,7 +10,7 @@ import { AppError } from "../errors";
 import { db } from "../firebase/admin";
 import { col, type ChapterDoc, type RevisionDoc, type RevisionKind, type WorkDoc } from "../firebase/model";
 import type { Actor } from "./actor";
-import { getWorkOrThrow, parseInput } from "./works";
+import { getWorkOrThrow, parseInput, requireManagedWork } from "./works";
 
 /** A chapter draft is a single Firestore document (1 MiB cap); leave headroom. */
 export const MAX_CHAPTER_BYTES = 900 * 1024;
@@ -30,7 +30,7 @@ export async function createChapter(actor: Actor, workId: string, titleInput: un
   const title = parseInput(chapterTitleSchema, titleInput);
   const ts = Timestamp.fromDate(now);
   return db().runTransaction(async (tx) => {
-    const { ref, work } = await getWorkOrThrow(tx, workId);
+    const { ref, work } = await getWorkOrThrow(tx, workId, actor);
     assertEditable(work);
     if (work.chapter_order.length >= MAX_CHAPTERS) throw new AppError("INVALID", `A publication can have at most ${MAX_CHAPTERS} chapters.`);
     const existing = await tx.get(col.chapters(workId).select("slug"));
@@ -79,7 +79,7 @@ export async function saveChapter(actor: Actor, input: SaveInput, now = new Date
   const ts = Timestamp.fromDate(now);
 
   return db().runTransaction(async (tx) => {
-    const { ref: workRef, work } = await getWorkOrThrow(tx, input.workId);
+    const { ref: workRef, work } = await getWorkOrThrow(tx, input.workId, actor);
     const chRef = col.chapter(input.workId, input.chapterId);
     const snap = await tx.get(chRef);
     if (!snap.exists) throw new AppError("NOT_FOUND", "That chapter no longer exists.");
@@ -125,6 +125,7 @@ function revision(actor: Actor, doc: ManuscriptDoc, title: string, rev: number, 
 export async function checkpointChapter(actor: Actor, workId: string, chapterId: string, now = new Date()): Promise<void> {
   const ts = Timestamp.fromDate(now);
   await db().runTransaction(async (tx) => {
+    await getWorkOrThrow(tx, workId, actor);
     const chRef = col.chapter(workId, chapterId);
     const snap = await tx.get(chRef);
     if (!snap.exists) throw new AppError("NOT_FOUND", "That chapter no longer exists.");
@@ -136,7 +137,8 @@ export async function checkpointChapter(actor: Actor, workId: string, chapterId:
 
 export type RevisionSummary = { id: string; kind: RevisionKind; rev: number; words: number; createdAt: string; title: string };
 
-export async function listRevisions(workId: string, chapterId: string, limit = 50): Promise<RevisionSummary[]> {
+export async function listRevisions(actor: Actor, workId: string, chapterId: string, limit = 50): Promise<RevisionSummary[]> {
+  await requireManagedWork(actor, workId);
   const snap = await col.revisions(workId, chapterId).orderBy("created_at", "desc").limit(limit).select("kind", "rev", "word_count", "created_at", "title").get();
   return snap.docs.map((d) => ({
     id: d.id,
@@ -148,7 +150,8 @@ export async function listRevisions(workId: string, chapterId: string, limit = 5
   }));
 }
 
-export async function getRevision(workId: string, chapterId: string, revisionId: string): Promise<RevisionDoc | null> {
+export async function getRevision(actor: Actor, workId: string, chapterId: string, revisionId: string): Promise<RevisionDoc | null> {
+  await requireManagedWork(actor, workId);
   const snap = await col.revisions(workId, chapterId).doc(revisionId).get();
   return snap.exists ? (snap.data() as RevisionDoc) : null;
 }
@@ -161,7 +164,7 @@ export async function restoreRevision(
 ): Promise<{ rev: number }> {
   const ts = Timestamp.fromDate(now);
   return db().runTransaction(async (tx) => {
-    const { ref: workRef, work } = await getWorkOrThrow(tx, input.workId);
+    const { ref: workRef, work } = await getWorkOrThrow(tx, input.workId, actor);
     assertEditable(work);
     const chRef = col.chapter(input.workId, input.chapterId);
     const [chSnap, revSnap] = await Promise.all([tx.get(chRef), tx.get(col.revisions(input.workId, input.chapterId).doc(input.revisionId))]);
@@ -189,7 +192,7 @@ export async function restoreRevision(
 export async function setChapterSlug(actor: Actor, workId: string, chapterId: string, slugInput: unknown, now = new Date()): Promise<void> {
   const slug = parseInput(slugSchema, slugInput);
   await db().runTransaction(async (tx) => {
-    const { ref, work } = await getWorkOrThrow(tx, workId);
+    const { ref, work } = await getWorkOrThrow(tx, workId, actor);
     assertEditable(work);
     const all = await tx.get(col.chapters(workId).select("slug"));
     if (all.docs.some((d) => d.id !== chapterId && d.get("slug") === slug)) throw new AppError("CONFLICT", "Another chapter already uses that URL.");
@@ -202,7 +205,7 @@ export async function setChapterSlug(actor: Actor, workId: string, chapterId: st
 export async function reorderChapters(actor: Actor, workId: string, order: unknown, now = new Date()): Promise<void> {
   if (!Array.isArray(order) || !order.every((id) => typeof id === "string")) throw new AppError("INVALID", "Invalid chapter order.");
   await db().runTransaction(async (tx) => {
-    const { ref, work } = await getWorkOrThrow(tx, workId);
+    const { ref, work } = await getWorkOrThrow(tx, workId, actor);
     assertEditable(work);
     const same = order.length === work.chapter_order.length && new Set(order).size === order.length && order.every((id) => work.chapter_order.includes(id));
     if (!same) throw new AppError("CONFLICT", "The chapter list changed. Reload and try again.");
@@ -213,7 +216,7 @@ export async function reorderChapters(actor: Actor, workId: string, order: unkno
 /** Deletes a draft chapter and its revisions. Published editions keep their own copy. */
 export async function deleteChapter(actor: Actor, workId: string, chapterId: string, now = new Date()): Promise<void> {
   await db().runTransaction(async (tx) => {
-    const { ref, work } = await getWorkOrThrow(tx, workId);
+    const { ref, work } = await getWorkOrThrow(tx, workId, actor);
     assertEditable(work);
     const chSnap = await tx.get(col.chapter(workId, chapterId));
     if (!chSnap.exists) throw new AppError("NOT_FOUND", "That chapter no longer exists.");
@@ -235,7 +238,8 @@ export async function deleteChapter(actor: Actor, workId: string, chapterId: str
 
 export type ChapterListItem = { id: string; title: string; slug: string; words: number; updatedAt: string };
 
-export async function listChapters(workId: string, order: string[]): Promise<ChapterListItem[]> {
+export async function listChapters(actor: Actor, workId: string): Promise<ChapterListItem[]> {
+  const { chapter_order: order } = await requireManagedWork(actor, workId);
   const snap = await col.chapters(workId).select("title", "slug", "word_count", "updated_at").get();
   const byId = new Map(snap.docs.map((d) => [d.id, d]));
   return order.flatMap((id) => {
@@ -245,7 +249,8 @@ export async function listChapters(workId: string, order: string[]): Promise<Cha
   });
 }
 
-export async function getChapter(workId: string, chapterId: string): Promise<ChapterDoc | null> {
+export async function getChapter(actor: Actor, workId: string, chapterId: string): Promise<ChapterDoc | null> {
+  await requireManagedWork(actor, workId);
   const snap = await col.chapter(workId, chapterId).get();
   return snap.exists ? (snap.data() as ChapterDoc) : null;
 }

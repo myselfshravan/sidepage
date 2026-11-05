@@ -27,7 +27,18 @@ const eslintConfig = defineConfig([
   },
   {
     // The public read model may not import draft or author-only modules.
-    files: ["src/server/read/public.ts", "src/app/memoirs/**", "src/app/fiction/**", "src/app/(house)/**", "src/components/publication/**", "src/components/reader/**"],
+    files: [
+      "src/server/read/public.ts",
+      "src/app/memoirs/**",
+      "src/app/fiction/**",
+      "src/app/(house)/page.tsx",
+      "src/app/(house)/about/**",
+      "src/app/(house)/archive/**",
+      "src/app/(house)/contact/**",
+      "src/app/(house)/authors/**",
+      "src/components/publication/**",
+      "src/components/reader/**",
+    ],
     rules: {
       "no-restricted-imports": ["error", { patterns: [{ group: ["@/server/services/*", "@/app/studio/*"], message: "Public pages read only from @/server/read/public." }] }],
     },

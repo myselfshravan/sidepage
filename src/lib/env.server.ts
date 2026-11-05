@@ -21,7 +21,6 @@ const schema = z
     GCP_WORKLOAD_IDENTITY_AUDIENCE: z.string().optional(),
     GCP_SERVICE_ACCOUNT_EMAIL: z.email().optional(),
 
-    AUTHOR_EMAIL: z.email(),
     /** Comma-separated extra origins accepted for state-changing requests. */
     APP_ORIGINS: z.string().optional(),
     CRON_SECRET: z.string().min(32).optional(),

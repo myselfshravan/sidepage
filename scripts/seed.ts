@@ -1,18 +1,28 @@
-// Seeds the local emulators with an author account and sample publications.
+// Seeds the local emulators with sample accounts and publications.
 //
 //   pnpm emulators          # in one terminal
 //   pnpm seed               # in another
 //
+// Accounts (password for all: sidepage-local-only):
+//   admin@sidepage.test    admin
+//   mira@sidepage.test     author (memoir)
+//   theo@sidepage.test     author (fiction)
+//   reader@sidepage.test   reader
+//
 // Refuses to run against a real project: seed data is obviously fictional sample
 // text and must never reach production.
 import "./load-env";
+import { Timestamp } from "@google-cloud/firestore";
+import type { Role } from "@/domain/access/policy";
 import { adminAuth } from "@/server/firebase/admin";
+import { col } from "@/server/firebase/model";
 import type { Actor } from "@/server/services/actor";
 import { createChapter, saveChapter } from "@/server/services/chapters";
 import { applyCommand } from "@/server/services/publishing";
-import { createWork, getWork, updateWorkMetadata } from "@/server/services/works";
+import { ensureUser } from "@/server/services/users";
+import { createWork, requireManagedWork, updateWorkMetadata } from "@/server/services/works";
 
-const PASSWORD = "sidepage-local-only";
+export const SEED_PASSWORD = "sidepage-local-only";
 
 if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_HOST || !process.env.FIREBASE_PROJECT_ID?.startsWith("demo-")) {
   console.error("seed: refusing to run outside the emulators (needs *_EMULATOR_HOST and a demo- project id).");
@@ -21,22 +31,22 @@ if (!process.env.FIRESTORE_EMULATOR_HOST || !process.env.FIREBASE_AUTH_EMULATOR_
 
 const p = (...paras: string[]) => ({ type: "doc", content: paras.map((text) => ({ type: "paragraph", content: [{ type: "text", text }] })) });
 
-async function ensureAuthor() {
-  const email = process.env.AUTHOR_EMAIL!;
+async function account(email: string, name: string, role: Role): Promise<Actor> {
   const existing = await adminAuth().getUserByEmail(email).catch(() => null);
-  const user = existing ?? (await adminAuth().createUser({ email, password: PASSWORD, emailVerified: true, displayName: "Sample Author" }));
-  await adminAuth().setCustomUserClaims(user.uid, { role: "author" });
-  return user.uid;
+  const user = existing ?? (await adminAuth().createUser({ email, password: SEED_PASSWORD, emailVerified: true, displayName: name }));
+  await ensureUser({ uid: user.uid, email, name });
+  await col.user(user.uid).update({ role, author_status: role === "reader" ? "none" : "approved", updated_at: Timestamp.now() });
+  return { uid: user.uid, kind: "user", role };
 }
 
 async function publication(actor: Actor, opts: { collection: "memoirs" | "fiction"; title: string; meta: Record<string, unknown>; chapters: [string, ReturnType<typeof p>][]; publish?: Date }) {
   const { workId } = await createWork(actor, { collection: opts.collection, title: opts.title });
-  const work = (await getWork(workId))!;
+  const work = await requireManagedWork(actor, workId);
   await updateWorkMetadata(actor, workId, {
     title: opts.title,
     subtitle: "",
     description: "",
-    author_name: "Sample Author",
+    author_name: work.author_name,
     slug: work.slug,
     content_warnings: [],
     seo_title: "",
@@ -55,10 +65,12 @@ async function publication(actor: Actor, opts: { collection: "memoirs" | "fictio
 }
 
 async function main() {
-  const uid = await ensureAuthor();
-  const actor: Actor = { uid, kind: "author" };
+  await account("admin@sidepage.test", "Sample Admin", "admin");
+  const mira = await account("mira@sidepage.test", "Mira Sample", "author");
+  const theo = await account("theo@sidepage.test", "Theo Sample", "author");
+  await account("reader@sidepage.test", "Rae Reader", "reader");
 
-  await publication(actor, {
+  await publication(mira, {
     collection: "memoirs",
     title: "The Ferry at Dusk",
     meta: {
@@ -80,7 +92,7 @@ async function main() {
     publish: new Date("2012-03-14T09:00:00+05:30"),
   });
 
-  await publication(actor, {
+  await publication(theo, {
     collection: "fiction",
     title: "Velvet Hours",
     meta: {
@@ -95,14 +107,14 @@ async function main() {
     publish: new Date(),
   });
 
-  await publication(actor, {
+  await publication(mira, {
     collection: "memoirs",
     title: "Unfinished Letters",
     meta: { subtitle: "A sample draft that is never public" },
     chapters: [["Dear —", p("Draft-only sample text. This must never appear on the public site.")]],
   });
 
-  console.info(`seed: done. Sign in at /sign-in with ${process.env.AUTHOR_EMAIL} / ${PASSWORD}`);
+  console.info(`seed: done. Accounts admin@, mira@, theo@, reader@sidepage.test — password ${SEED_PASSWORD}`);
 }
 
 main().then(

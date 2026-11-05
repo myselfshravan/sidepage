@@ -47,10 +47,9 @@ Each entry: the decision, why, and what it costs.
 ### D11. Auth changes use full page navigations
 - **Why:** partial prefetching cached a "signed-out → /sign-in" redirect for `/studio`, which was replayed after sign-in. A full navigation also drops any studio payloads from the client router cache at sign-out.
 
-### D12. The author is identified by claim **and** email
-- **Why:** `role: "author"` claim plus verified `AUTHOR_EMAIL`. A mis-set claim on another account, or a matching email without the claim, both fail closed.
+### D12. ~~The author is identified by claim and email~~ (superseded by D16)
 
-### D13. Reader progress, bookmarks and preferences are stored on the device
+### D13. ~~Reader progress and bookmarks are stored on the device~~ (superseded by D17)
 - **Why:** release 1 has public reading only, with no reader accounts. Synced progress arrives with invited readers.
 - **Not stored on the device:** draft manuscripts. Recovery uses server autosave and revisions only.
 
@@ -61,3 +60,19 @@ Each entry: the decision, why, and what it costs.
 ### D15. `NODE_OPTIONS=--experimental-require-module` on Vercel
 - **Why:** Vercel's Node runtime has `require(esm)` disabled. `firebase-admin` 14 → `jwks-rsa` 4 → `jose` 6 (ESM-only) then fails with `ERR_REQUIRE_ESM` on every Auth call. Reproduced locally with `--no-experimental-require-module`.
 - **Revisit:** remove the flag if firebase-admin ships an ESM-safe dependency chain.
+
+### D16. Multi-author platform; roles live in Firestore, not in token claims
+- **Change:** sidepage was first built for a single author identified by `AUTHOR_EMAIL`. It is now a platform where anyone can sign up as a reader, readers ask to write, and an admin approves them.
+- **Why roles are in `users/{uid}`:** the server reads the role on every request, so promotions and demotions apply immediately. Custom claims would only refresh with a new token.
+- **Ownership:** every work has an `owner_uid`. Services return not-found to non-owners, so the existence of drafts isn't revealed. Admins can moderate any work.
+- **Sessions:** readers get 14-day sessions; authors and admins get 1-day sessions.
+
+### D17. Signed-in reader data is stored server-side
+- **What:** progress, bookmarks, library and follows live under `users/{uid}`. Writes are accepted only for works the reader can currently read.
+- **Anonymous readers:** keep progress and bookmarks on the device as before.
+- **Static pages:** reading pages stay static and fetch account state from `/api/reader` after load.
+
+### D18. PostHog shares the existing project
+- **Why:** the PostHog organization's free plan allows one project, which an existing app already uses.
+- **How:** every sidepage event carries `app: "sidepage"`. Moving to its own project means changing `NEXT_PUBLIC_POSTHOG_KEY`.
+- **Settings:** autocapture and session recording are off, and page titles are stripped. Sentry was dropped at the user's request.

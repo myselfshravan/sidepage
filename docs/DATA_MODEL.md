@@ -6,7 +6,13 @@ All access is through the Admin SDK on the server. Security rules deny every cli
 
 | Path | Responsibility | Written by | Read by |
 |---|---|---|---|
-| `works/{workId}` | The author's workspace for a publication: draft metadata, status, visibility, dates, chapter order, counters | studio services | studio only |
+| `users/{uid}` | Profile: `handle`, `display_name`, `bio`, `email` (private), `role` (reader, author or admin), `author_status`, `author_request` | created on first sign-in; users, admins | server only; public author pages expose handle, name and bio for writers |
+| `handles/{handle}` | Unique handle reservation → `uid` | users service | author pages |
+| `users/{uid}/progress/{workId}` | Reading position: chapter slug, fraction | reader | that reader |
+| `users/{uid}/bookmarks/{id}` | Bookmarks: work, chapter, block, short excerpt of public text | reader | that reader |
+| `users/{uid}/library/{workId}` | Saved publications | reader | that reader |
+| `users/{uid}/following/{authorUid}` | Followed authors | reader | that reader |
+| `works/{workId}` | The owning author's workspace (`owner_uid`) for a publication: draft metadata, status, visibility, dates, chapter order, counters | studio services | studio only |
 | `works/{id}/chapters/{chapterId}` | Draft chapter: `doc` (manuscript JSON), `rev` (autosave concurrency), word count | studio services | studio only |
 | `works/{id}/chapters/{cid}/revisions/{revId}` | Revision snapshots: `AUTO` (≥10 min or ≥200 words apart), `CHECKPOINT`, `BEFORE_RESTORE` | studio services | studio only |
 | `works/{id}/events/{eventId}` | Append-only history: `occurred_at` (server time), `effective_at` (claimed date), actor, status change, edition | same transaction as each change | studio |
@@ -16,7 +22,7 @@ All access is through the Admin SDK on the server. Security rules deny every cli
 | `slugs/{slug}` | Global slug reservation → `work_id` | created in a transaction with the work | public pages |
 | `rate_limits/{sha256}` | Fixed-window counters, keyed by a salted hash (no raw IPs or uids) | rate limiter | rate limiter |
 
-Deferred collections (designed, not created yet): `grants`, `invitations`, `share_links`, `users/{uid}/progress`, `users/{uid}/bookmarks`, `assets`, `ingest_batches`, `story_entities`, `story_connections`, `audit_events`.
+Deferred collections (designed, not created yet): `grants`, `invitations`, `share_links`, `assets`, `ingest_batches`, `story_entities`, `story_connections`, `audit_events`.
 
 ## Dates
 
@@ -39,7 +45,11 @@ Deferred collections (designed, not created yet): `grants`, `invitations`, `shar
 | Collection page: `published where listed==true and collection==X order by sort_at desc` | `listed, collection, sort_at desc` |
 | Home and archive: `published where listed==true order by sort_at desc` | `listed, sort_at desc` |
 | Scheduler: `works where status=='SCHEDULED' and scheduled_for<=now order by scheduled_for` | `status, scheduled_for` |
-| Studio filter: `works where status==X order by last_edited_at desc` | `status, last_edited_at desc` |
+| Studio list: `works where owner_uid==me [and status==X] order by last_edited_at desc` | `owner_uid, [status,] last_edited_at desc` |
+| Author page: `published where listed==true and owner_uid==X order by sort_at desc` | `listed, owner_uid, sort_at desc` |
+| Library, new from followed: `published where listed==true and owner_uid in [...] order by sort_at desc` | same |
+| Author requests: `users where author_status=='requested' order by updated_at` | `author_status, updated_at` |
+| Bookmarks per work: `users/{uid}/bookmarks where work_id==X order by created_at desc` | `work_id, created_at desc` |
 | Editions list: `editions where work_id==X order by number desc` | `work_id, number desc` |
 | Stale-seal sweep: `editions where state=='SEALING' and claimed_at<cutoff` | `state, claimed_at` |
 

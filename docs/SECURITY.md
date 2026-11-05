@@ -8,13 +8,13 @@
    - Every server action calls `guard()`: `assertSameOrigin`, then `requireAuthor`, then `rateLimit`.
    - Route handlers check origin and rate limits themselves.
    - `src/proxy.ts` only does an optimistic redirect. It is not a security boundary.
-3. **The author is** a Firebase user with custom claim `role: "author"` **and** a verified email equal to `AUTHOR_EMAIL`. Both must hold on every request.
+3. **Roles are read from `users/{uid}` on every request** (reader, author, admin). Any verified account can hold a session. Writing needs `author` or `admin`, and every studio service checks that the actor owns the work, returning not-found otherwise. Administration needs `admin`.
 
 ## Controls
 
 | Control | Where |
 |---|---|
-| Session cookies: httpOnly, SameSite=Lax, Secure over HTTPS, 1-day lifetime, minted only from sign-ins under 5 minutes old | `src/server/auth/session.ts`, `src/app/api/auth/session/route.ts` |
+| Session cookies: httpOnly, SameSite=Lax, Secure over HTTPS; 14 days for readers, 1 day for writers; minted only from verified-email sign-ins under 5 minutes old | `src/server/auth/session.ts`, `src/app/api/auth/session/route.ts` |
 | Revocation: `verifySessionCookie(…, checkRevoked=true)` on every request; sign-out calls `revokeRefreshTokens` | session.ts. Firebase revocation has one-second granularity. |
 | No client token storage: Firebase client persistence is in-memory, and the client signs out right after the exchange | `src/lib/firebase-client.ts` |
 | CSRF: `Origin` must match the request origin or `APP_ORIGINS`; `Sec-Fetch-Site` must be `same-origin`; a missing Origin is refused; plus SameSite cookies | `src/server/http/origin.ts` |
@@ -33,7 +33,7 @@ Pages are prerendered (partial prerendering), and per-request nonces would force
 ## Private writing
 
 - Manuscripts and titles are never logged. Error logs record only the error name and message.
-- Analytics and Sentry are not integrated yet. When added, events carry IDs only, and `beforeSend` strips request bodies.
+- PostHog events carry ids and enums only, from a typed catalogue enforced by `tests/unit/analytics.test.ts`. Autocapture and session recording are off, and page titles are stripped.
 - Public metadata, Open Graph tags and the sitemap come only from the public read model.
 - The repository contains no manuscripts.
   - Seed data is fictional placeholder text and refuses to run outside the emulators.
@@ -45,7 +45,9 @@ Pages are prerendered (partial prerendering), and per-request nonces would force
 |---|---|
 | Clients cannot read or write any collection or storage path | `tests/rules/deny-all.test.ts` |
 | Unpublished drafts, UNLISTED and PRIVATE works, withdrawn and archived works are not publicly readable | `tests/integration/publishing.test.ts` (visibility, withdraw/archive), `tests/e2e/reader.spec.ts` |
-| Only the author can hold a session (wrong email, missing claim, unverified email and stale sign-ins are refused) | `tests/integration/auth.test.ts` |
+| Unverified emails and stale sign-ins are refused; roles apply live; deleted profiles lose their session | `tests/integration/auth.test.ts` |
+| Authors can't read, edit, publish or archive another author's drafts; readers can't write; only admins approve or change roles; admins can't demote themselves | `tests/integration/access.test.ts`, `tests/e2e/publishing.spec.ts` |
+| Reader data is per-account and only for readable works | `tests/integration/reader.test.ts` |
 | Revoked sessions fail on the next request | auth.test.ts, `tests/e2e/publishing.spec.ts` (sign-out replay) |
 | Studio is closed to visitors, forged cookies, cross-site POSTs and cron calls without the secret | publishing.spec.ts |
 | Published editions never change when the draft changes; republishing preserves earlier editions; hashes verify | publishing.test.ts, publishing.spec.ts |
