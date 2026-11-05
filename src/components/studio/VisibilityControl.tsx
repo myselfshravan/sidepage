@@ -8,8 +8,8 @@ import { Panel } from "./ui";
 
 const OPTIONS: { value: Visibility; label: string; hint: string }[] = [
   { value: "PUBLIC", label: "Public", hint: "Listed in the collection and open to everyone." },
-  { value: "UNLISTED", label: "Unlisted", hint: "Hidden from the public site. Share links arrive with invitations." },
-  { value: "PRIVATE", label: "Private", hint: "Hidden from the public site. Invited readers arrive with invitations." },
+  { value: "UNLISTED", label: "Unlisted", hint: "Not listed anywhere. Readable through the secret links below." },
+  { value: "PRIVATE", label: "Private", hint: "Not listed anywhere. Only people you give a secret link can read it." },
 ];
 
 export function VisibilityControl({ workId, visibility }: { workId: string; visibility: Visibility }) {

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { updateMetadataAction } from "@/app/studio/actions";
 import { instantToZonedWallTime, zonedWallTimeToInstant } from "@/domain/dates/partial-date";
-import type { PartialDate } from "@/domain/types";
+import type { Byline, PartialDate } from "@/domain/types";
 import { Button, Field, inputClass, Panel } from "./ui";
 
 type Initial = {
@@ -12,6 +12,7 @@ type Initial = {
   subtitle: string;
   description: string;
   author_name: string;
+  byline: Byline;
   slug: string;
   content_warnings: string[];
   seo_title: string;
@@ -28,6 +29,7 @@ export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: 
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{ ok: boolean; message: string }>();
   const [dirty, setDirty] = useState(false);
+  const [byline, setByline] = useState<Byline>(initial.byline);
   // Browsers differ on canonical names (Chrome lists "Asia/Calcutta", not "Asia/Kolkata"),
   // so the saved zone is always offered first and never silently replaced.
   const zones = useMemo(() => [initial.timezone, ...Intl.supportedValuesOf("timeZone").filter((z) => z !== initial.timezone)], [initial.timezone]);
@@ -52,6 +54,7 @@ export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: 
             title: s("title"),
             subtitle: s("subtitle"),
             description: s("description"),
+            byline,
             author_name: s("author_name"),
             slug: s("slug"),
             content_warnings: s("content_warnings").split(",").map((w) => w.trim()).filter(Boolean),
@@ -87,9 +90,33 @@ export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: 
             <textarea id="m-description" name="description" rows={3} maxLength={2000} defaultValue={initial.description} className={inputClass} />
           </Field>
           <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Author" htmlFor="m-author">
-              <input id="m-author" name="author_name" required maxLength={120} defaultValue={initial.author_name} className={inputClass} />
-            </Field>
+            <fieldset className="space-y-1.5">
+              <legend className="text-sm font-medium">Byline</legend>
+              <div className="flex flex-wrap gap-1.5">
+                {(
+                  [
+                    ["profile", "Your name"],
+                    ["pen_name", "Pen name"],
+                    ["anonymous", "Anonymous"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <label key={value} className="cursor-pointer rounded-full border border-rule px-3 py-1 text-sm has-[:checked]:border-ink has-[:checked]:font-medium has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-[var(--focus)]">
+                    <input type="radio" name="byline" value={value} checked={byline === value} onChange={() => setByline(value)} className="sr-only" />
+                    {label}
+                  </label>
+                ))}
+              </div>
+              {byline === "pen_name" ? (
+                <input aria-label="Pen name" name="author_name" required maxLength={120} defaultValue={initial.byline === "pen_name" ? initial.author_name : ""} placeholder="e.g. M. Vale" className={inputClass} />
+              ) : (
+                <input type="hidden" name="author_name" value="" />
+              )}
+              <p className="text-xs text-muted">
+                {byline === "profile"
+                  ? "Credited to your profile, with a link to your author page."
+                  : "Never linked to your account, your author page or your other work, anywhere on the site."}
+              </p>
+            </fieldset>
             <Field label="URL slug" htmlFor="m-slug" hint={slugLocked ? "Locked after the first edition so links keep working." : "Lowercase letters, numbers and hyphens."}>
               <input id="m-slug" name="slug" required readOnly={slugLocked} defaultValue={initial.slug} className={inputClass} pattern="[a-z0-9]+(-[a-z0-9]+)*" />
             </Field>

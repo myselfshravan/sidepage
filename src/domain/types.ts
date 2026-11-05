@@ -28,3 +28,7 @@ export const COLLECTION_LABEL: Record<Collection, string> = {
   memoirs: "Memoirs",
   fiction: "Fiction",
 };
+
+/** Who a publication is credited to. Pen names and anonymous works never link to the account. */
+export const BYLINES = ["profile", "pen_name", "anonymous"] as const;
+export type Byline = (typeof BYLINES)[number];

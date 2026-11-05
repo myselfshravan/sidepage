@@ -174,7 +174,7 @@ export async function libraryView(actor: Actor): Promise<LibraryView> {
   const followedUids = followingSnap.docs.map((d) => d.id);
   const [fromFollowedSnap, followedProfiles] = await Promise.all([
     followedUids.length
-      ? col.published().where("listed", "==", true).where("owner_uid", "in", followedUids).orderBy("sort_at", "desc").limit(20).get()
+      ? col.published().where("listed", "==", true).where("public_author_uid", "in", followedUids).orderBy("sort_at", "desc").limit(20).get()
       : null,
     followedUids.length ? col.users().where(FieldPath.documentId(), "in", followedUids).get() : null,
   ]);

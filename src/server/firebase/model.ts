@@ -3,7 +3,7 @@ import type { Timestamp } from "@google-cloud/firestore";
 import type { EventType } from "@/domain/lifecycle/machine";
 import type { ManuscriptDoc } from "@/domain/manuscript/schema";
 import type { AuthorStatus, Role } from "@/domain/access/policy";
-import type { Collection, PartialDate, Status, Visibility } from "@/domain/types";
+import type { Byline, Collection, PartialDate, Status, Visibility } from "@/domain/types";
 import { db } from "./admin";
 
 // Firestore document shapes. See docs/DATA_MODEL.md for responsibilities,
@@ -27,6 +27,17 @@ export type UserDoc = {
 
 export type HandleDoc = { uid: string };
 
+/** A personal access token for agents. Stored by the SHA-256 of the token; the token is shown once. */
+export type ApiTokenDoc = {
+  owner_uid: string;
+  name: string;
+  /** First characters of the token, so the owner can tell tokens apart. */
+  hint: string;
+  created_at: Timestamp;
+  last_used_at: Timestamp | null;
+  revoked_at: Timestamp | null;
+};
+
 /** The owning author's workspace for a publication. Never read by public code paths. */
 export type WorkDoc = {
   owner_uid: string;
@@ -36,6 +47,7 @@ export type WorkDoc = {
   subtitle: string;
   description: string;
   author_name: string;
+  byline: Byline;
   content_warnings: string[];
   seo_title: string;
   seo_description: string;
@@ -112,6 +124,7 @@ export type EditionMetadata = {
   subtitle: string;
   description: string;
   author_name: string;
+  byline: Byline;
   content_warnings: string[];
   seo_title: string;
   seo_description: string;
@@ -159,6 +172,9 @@ export type EditionPartDoc = {
 export type PublishedDoc = {
   work_id: string;
   owner_uid: string;
+  /** The account credited publicly: the owner for profile bylines, null for pen names and anonymous works. */
+  public_author_uid: string | null;
+  /** Empty for pen names and anonymous works, so nothing links back to the account. */
   author_handle: string;
   collection: Collection;
   slug: string;
@@ -184,6 +200,18 @@ export type PublishedDoc = {
 
 export type SlugDoc = { work_id: string };
 
+/** A secret link that opens one publication. Stored by the SHA-256 of its token; the token itself is never stored. */
+export type ShareLinkDoc = {
+  work_id: string;
+  owner_uid: string;
+  label: string;
+  created_by: string;
+  created_at: Timestamp;
+  expires_at: Timestamp | null;
+  revoked_at: Timestamp | null;
+  last_opened_at: Timestamp | null;
+};
+
 export type RateLimitDoc = { window_start: Timestamp; count: number; expires_at: Timestamp };
 
 export const col = {
@@ -204,6 +232,10 @@ export const col = {
   users: () => db().collection("users"),
   user: (uid: string) => db().collection("users").doc(uid),
   handle: (handle: string) => db().collection("handles").doc(handle),
+  apiTokens: () => db().collection("api_tokens"),
+  apiToken: (hash: string) => db().collection("api_tokens").doc(hash),
+  shareLinks: () => db().collection("share_links"),
+  shareLink: (hash: string) => db().collection("share_links").doc(hash),
 };
 
 export const editionId = (workId: string, number: number) => `${workId}-e${number}`;

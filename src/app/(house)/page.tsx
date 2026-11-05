@@ -53,9 +53,13 @@ export default async function HomePage() {
                     <span className="text-muted">
                       {" "}
                       by{" "}
-                      <Link href={`/authors/${w.authorHandle}`} className="link-quiet">
-                        {w.authorName}
-                      </Link>
+                      {w.authorHandle ? (
+                        <Link href={`/authors/${w.authorHandle}`} className="link-quiet">
+                          {w.authorName}
+                        </Link>
+                      ) : (
+                        w.authorName
+                      )}
                     </span>
                   </span>
                   <span className="meta whitespace-nowrap">{formatMinutes(w.readingMinutes)}</span>
@@ -93,9 +97,13 @@ export default async function HomePage() {
                   </h3>
                   <p className="meta">
                     by{" "}
-                    <Link href={`/authors/${lead.authorHandle}`} className="link-quiet">
-                      {lead.authorName}
-                    </Link>
+                    {lead.authorHandle ? (
+                      <Link href={`/authors/${lead.authorHandle}`} className="link-quiet">
+                        {lead.authorName}
+                      </Link>
+                    ) : (
+                      lead.authorName
+                    )}
                   </p>
                   {lead.description ? <p className="max-w-xl text-lg leading-relaxed text-muted">{lead.description}</p> : null}
                   {lead.contentWarnings.length > 0 ? <p className="meta">Content warnings: {lead.contentWarnings.join(", ")}</p> : null}

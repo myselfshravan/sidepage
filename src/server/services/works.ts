@@ -112,6 +112,7 @@ function newWork(actor: Actor, collection: Collection, title: string, slug: stri
     subtitle: "",
     description: "",
     author_name: authorName,
+    byline: "profile",
     content_warnings: [],
     seo_title: "",
     seo_description: "",
@@ -148,6 +149,9 @@ export async function updateWorkMetadata(actor: Actor, workId: string, input: un
   await db().runTransaction(async (tx) => {
     const { ref, work } = await getWorkOrThrow(tx, workId, actor);
     if (work.status === "ARCHIVED") throw new AppError("INVALID_TRANSITION", "Restore this publication before editing it.");
+    // All reads precede writes in a transaction. The displayed name follows the
+    // byline: the profile name, the pen name, or "Anonymous".
+    const profileName = ((await tx.get(col.user(work.owner_uid))).get("display_name") as string | undefined) ?? work.author_name;
 
     if (data.slug !== work.slug) {
       if (work.edition_count > 0) {
@@ -159,8 +163,10 @@ export async function updateWorkMetadata(actor: Actor, workId: string, input: un
       tx.create(col.slug(data.slug), { work_id: workId });
     }
 
+    const authorName = data.byline === "anonymous" ? "Anonymous" : data.byline === "pen_name" ? data.author_name : profileName;
     tx.update(ref, {
       ...data,
+      author_name: authorName,
       content_warnings: [...new Set(data.content_warnings)],
       digitized_at: data.digitized_at ? Timestamp.fromDate(new Date(data.digitized_at)) : null,
       last_edited_at: ts,
@@ -213,6 +219,7 @@ export async function duplicateWork(actor: Actor, workId: string, now = new Date
       subtitle: work.subtitle,
       description: work.description,
       author_name: work.author_name,
+      byline: work.byline,
       content_warnings: work.content_warnings,
       seo_title: work.seo_title,
       seo_description: work.seo_description,

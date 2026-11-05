@@ -51,6 +51,8 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // Fonts read at runtime by the Open Graph image routes.
+  outputFileTracingIncludes: { "/**": ["./assets/fonts/*.woff"] },
   // Load the Firebase server SDKs from node_modules rather than bundling them, so
   // every route shares one copy (Firestore rejects Timestamps from a second copy).
   serverExternalPackages: ["firebase-admin", "@google-cloud/firestore", "google-auth-library"],
@@ -74,6 +76,15 @@ const nextConfig: NextConfig = {
         ],
       },
       { source: "/api/:path*", headers: [{ key: "Cache-Control", value: "no-store" }] },
+      // Secret-link reading: never stored, indexed, or leaked through the Referer header.
+      {
+        source: "/r/:path*",
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+        ],
+      },
     ];
   },
 };

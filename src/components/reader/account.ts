@@ -16,8 +16,8 @@ export type ServerReaderState = {
 
 export type AccountState = { status: "loading" } | { status: "anonymous" } | ({ status: "signed-in" } & Omit<ServerReaderState, "signedIn">);
 
-export function useReaderAccount(workId: string) {
-  const [state, setState] = useState<AccountState>({ status: "loading" });
+export function useReaderAccount(workId: string, enabled = true) {
+  const [state, setState] = useState<AccountState>({ status: enabled ? "loading" : "anonymous" });
   const load = useCallback(async () => {
     const res = await fetch(`/api/reader?work=${encodeURIComponent(workId)}`, { cache: "no-store" }).catch(() => null);
     const body = (await res?.json().catch(() => null)) as (ServerReaderState | { signedIn: false }) | null;
@@ -25,6 +25,7 @@ export function useReaderAccount(workId: string) {
     setState({ status: "signed-in", progress: body.progress, bookmarks: body.bookmarks, saved: body.saved });
   }, [workId]);
   useEffect(() => {
+    if (!enabled) return;
     let live = true;
     fetch(`/api/reader?work=${encodeURIComponent(workId)}`, { cache: "no-store" })
       .then((r) => r.json())
@@ -36,7 +37,7 @@ export function useReaderAccount(workId: string) {
     return () => {
       live = false;
     };
-  }, [workId]);
+  }, [workId, enabled]);
   return { state, reload: load };
 }
 

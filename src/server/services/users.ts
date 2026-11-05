@@ -72,7 +72,7 @@ export async function updateProfile(actor: Actor, input: unknown, now = new Date
   });
   if (result.handle !== result.previous) {
     // Published works link to the author by handle; point them at the new one.
-    const published = await col.published().where("owner_uid", "==", actor.uid).select().get();
+    const published = await col.published().where("public_author_uid", "==", actor.uid).select().get();
     const writer = db().bulkWriter();
     for (const d of published.docs) writer.update(d.ref, { author_handle: result.handle });
     await writer.close();

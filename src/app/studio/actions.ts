@@ -12,6 +12,8 @@ import { LIMITS, rateLimit, type Limit } from "@/server/http/rate-limit";
 import { actorFrom, type Actor } from "@/server/services/actor";
 import * as chapters from "@/server/services/chapters";
 import { applyCommand, tagsFor } from "@/server/services/publishing";
+import * as apiTokens from "@/server/services/api-tokens";
+import * as shareLinks from "@/server/services/share-links";
 import * as users from "@/server/services/users";
 import * as works from "@/server/services/works";
 import { timeZoneSchema } from "@/lib/validation/work";
@@ -200,6 +202,39 @@ export async function setRoleAction(uid: string, role: string): Promise<ActionRe
   return asResult(async () => {
     const actor = await adminGuard();
     await users.setRole(actor, parseId(uid), role);
+    refresh();
+    return undefined;
+  });
+}
+
+export async function createShareLinkAction(workId: string, input: { label: string; expires_in_days: number | null }): Promise<ActionResult<{ url: string }>> {
+  return asResult(async () => {
+    const { token } = await shareLinks.createShareLink(await guard(), parseId(workId), input);
+    const origin = (await headers()).get("origin") ?? "";
+    refresh();
+    return { url: `${origin}/r/${token}` };
+  });
+}
+
+export async function revokeShareLinkAction(workId: string, linkId: string): Promise<ActionResult> {
+  return asResult(async () => {
+    await shareLinks.revokeShareLink(await guard(), parseId(workId), linkId);
+    refresh();
+    return undefined;
+  });
+}
+
+export async function createApiTokenAction(name: string): Promise<ActionResult<{ token: string }>> {
+  return asResult(async () => {
+    const { token } = await apiTokens.createApiToken(await adminGuard(), { name });
+    refresh();
+    return { token };
+  });
+}
+
+export async function revokeApiTokenAction(id: string): Promise<ActionResult> {
+  return asResult(async () => {
+    await apiTokens.revokeApiToken(await adminGuard(), id);
     refresh();
     return undefined;
   });

@@ -10,6 +10,7 @@ Every piece is a publication, not a post. It has immutable editions, historical 
 - Security: [docs/SECURITY.md](docs/SECURITY.md)
 - Deployment: [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 - Roadmap and decisions: [docs/ROADMAP.md](docs/ROADMAP.md), [docs/DECISIONS.md](docs/DECISIONS.md)
+- Agents and MCP: [docs/AGENTS.md](docs/AGENTS.md)
 - Where things stand: [PROJECT_STATUS.md](PROJECT_STATUS.md)
 
 ## Stack

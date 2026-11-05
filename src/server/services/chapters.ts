@@ -3,7 +3,7 @@ import { FieldValue, Timestamp } from "@google-cloud/firestore";
 import { contentHash } from "@/domain/manuscript/canonical";
 import { readingMinutes, wordCount } from "@/domain/manuscript/metrics";
 import { emptyDoc, SCHEMA_VERSION, type ManuscriptDoc } from "@/domain/manuscript/schema";
-import { validateManuscript } from "@/domain/manuscript/validate";
+import { ManuscriptError, validateManuscript } from "@/domain/manuscript/validate";
 import { slugify, uniqueSlug } from "@/domain/publication/slug";
 import { chapterTitleSchema, slugSchema } from "@/lib/validation/work";
 import { AppError } from "../errors";
@@ -71,7 +71,13 @@ export type SaveResult =
  */
 export async function saveChapter(actor: Actor, input: SaveInput, now = new Date()): Promise<SaveResult> {
   const title = parseInput(chapterTitleSchema, input.title);
-  const doc = validateManuscript(input.doc);
+  let doc: ManuscriptDoc;
+  try {
+    doc = validateManuscript(input.doc);
+  } catch (error) {
+    if (error instanceof ManuscriptError) throw new AppError("INVALID", `The chapter text can't be saved: ${error.message}`);
+    throw error;
+  }
   if (Buffer.byteLength(JSON.stringify(doc), "utf8") > MAX_CHAPTER_BYTES) {
     throw new AppError("INVALID", "This chapter is too long to save as one chapter. Split it into two.");
   }

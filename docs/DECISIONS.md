@@ -76,3 +76,21 @@ Each entry: the decision, why, and what it costs.
 - **Why:** the PostHog organization's free plan allows one project, which an existing app already uses.
 - **How:** every sidepage event carries `app: "sidepage"`. Moving to its own project means changing `NEXT_PUBLIC_POSTHOG_KEY`.
 - **Settings:** autocapture and session recording are off, and page titles are stripped. Sentry was dropped at the user's request.
+
+### D19. Pen names are unlinkable by construction
+- **How:** a publication's `byline` is `profile`, `pen_name` or `anonymous`. For the last two, the public read model stores `public_author_uid: null` and an empty handle. Author pages, follows and the library all query `public_author_uid`, so pen-name works can't be joined to an account or to each other through any public surface.
+- **Who can still see the link:** `owner_uid` stays on server-only documents so the studio and admins can manage the work.
+
+### D20. Private reading is by secret link
+- **How:** `share_links/{sha256(token)}`. The 256-bit token is the key, shown once.
+- **Expiry and revocation:** checked on every request. Link pages are dynamic, `no-store`, `noindex` and `no-referrer`.
+- **Why not reader accounts:** chosen over invite-by-account for simplicity; readers need no account. A link opens the current edition of a live work, and withdrawing the work closes every link.
+
+### D21. Agents use personal access tokens and a local stdio MCP server
+- **Tokens:** created by admins only, `sp_` + 256 bits, stored hashed. They act with the owner's *current* role, so demotion cuts them off.
+- **API:** `/api/v1` uses bearer auth only (no cookies, so CSRF doesn't apply) and is rate-limited per owner.
+- **MCP server:** `scripts/mcp/sidepage-mcp.mts` is a stateless client of that API, chosen over a hosted MCP endpoint per the owner's preference.
+
+### D22. Open Graph cards are generated in the site's type
+- **How:** `next/og` with Newsreader and Bodoni (OFL, in `assets/fonts`).
+- **Private pages:** secret-link pages deliberately inherit the generic site card, so a pasted private link never previews its title.

@@ -1,0 +1,206 @@
+#!/usr/bin/env -S npx tsx
+// sidepage MCP server (stdio). Lets agents write and publish on sidepage through the
+// token-authenticated /api/v1 API. It holds no state and no credentials of its own.
+//
+//   SIDEPAGE_TOKEN=sp_…  [SIDEPAGE_URL=https://sidepage.vercel.app]  pnpm mcp
+//
+// Register with Claude Code:
+//   claude mcp add sidepage --env SIDEPAGE_TOKEN=sp_… -- pnpm --silent --dir /path/to/sidepage mcp
+//
+// See docs/AGENTS.md for every tool and a recommended workflow.
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+
+const BASE = (process.env.SIDEPAGE_URL ?? "https://sidepage.vercel.app").replace(/\/$/, "");
+const TOKEN = process.env.SIDEPAGE_TOKEN ?? "";
+
+if (!/^sp_[A-Za-z0-9_-]{43}$/.test(TOKEN)) {
+  console.error("sidepage-mcp: set SIDEPAGE_TOKEN to an API token from /studio/admin (it starts with sp_).");
+  process.exit(1);
+}
+
+type Json = Record<string, unknown> | unknown[];
+
+async function api(method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", path: string, body?: Json): Promise<unknown> {
+  const res = await fetch(`${BASE}/api/v1${path}`, {
+    method,
+    headers: { authorization: `Bearer ${TOKEN}`, ...(body ? { "content-type": "application/json" } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = (await res.json().catch(() => ({}))) as { error?: { code: string; message: string } };
+  if (!res.ok) throw new Error(`${res.status} ${data.error?.code ?? ""}: ${data.error?.message ?? res.statusText}`);
+  return data;
+}
+
+function result(value: unknown) {
+  return { content: [{ type: "text" as const, text: JSON.stringify(value, null, 2) }] };
+}
+
+async function run(fn: () => Promise<unknown>) {
+  try {
+    return result(await fn());
+  } catch (error) {
+    return { isError: true, content: [{ type: "text" as const, text: error instanceof Error ? error.message : String(error) }] };
+  }
+}
+
+const id = z.string().min(1).describe("Publication id (from list_publications or create_publication).");
+const partialDate = z
+  .object({ year: z.number().int(), month: z.number().int().min(1).max(12).optional(), day: z.number().int().min(1).max(31).optional(), approximate: z.boolean() })
+  .describe("When it was originally written, as precisely as known.");
+const metadata = {
+  subtitle: z.string().max(300).optional(),
+  description: z.string().max(2000).optional().describe("Shown on the publication page and in collection lists."),
+  byline: z.enum(["profile", "pen_name", "anonymous"]).optional().describe("profile = your name, linked to your author page; pen_name = the pen_name below, never linked to you; anonymous = shown as Anonymous."),
+  pen_name: z.string().max(120).optional().describe("Required when byline is pen_name."),
+  content_warnings: z.array(z.string().max(80)).max(20).optional().describe("Shown before fiction chapters."),
+  original_written_at: partialDate.nullable().optional(),
+  seo_title: z.string().max(120).optional(),
+  seo_description: z.string().max(300).optional(),
+  timezone: z.string().optional().describe("IANA zone, e.g. Asia/Kolkata."),
+};
+
+const server = new McpServer({ name: "sidepage", version: "1.0.0" });
+
+server.registerTool("whoami", { title: "Who am I", description: "The account this token acts as, and its role." }, () => run(() => api("GET", "/me")));
+
+server.registerTool(
+  "list_publications",
+  {
+    title: "List publications",
+    description: "Your publications, most recently edited first (20 per page).",
+    inputSchema: { status: z.enum(["DRAFT", "REVIEW", "SCHEDULED", "PUBLISHED", "ARCHIVED"]).optional(), after: z.string().optional().describe("Cursor: the `next` value from the previous page.") },
+  },
+  ({ status, after }) => run(() => api("GET", `/publications?${new URLSearchParams({ ...(status ? { status } : {}), ...(after ? { after } : {}) })}`)),
+);
+
+server.registerTool(
+  "get_publication",
+  { title: "Get publication", description: "Metadata, status, chapter list, editions and the public URL (if public).", inputSchema: { id } },
+  ({ id }) => run(() => api("GET", `/publications/${id}`)),
+);
+
+server.registerTool(
+  "create_publication",
+  {
+    title: "Create publication",
+    description: "Creates a draft in the memoirs or fiction collection. Add chapters next, then publish.",
+    inputSchema: { collection: z.enum(["memoirs", "fiction"]), title: z.string().min(1).max(200), ...metadata },
+  },
+  (input) => run(() => api("POST", "/publications", input)),
+);
+
+server.registerTool(
+  "update_publication",
+  {
+    title: "Update publication details",
+    description: "Changes draft metadata. Readers see it after the next publish. The slug can't change once published.",
+    inputSchema: { id, title: z.string().min(1).max(200).optional(), slug: z.string().optional(), ...metadata },
+  },
+  ({ id, ...patch }) => run(() => api("PATCH", `/publications/${id}`, patch)),
+);
+
+server.registerTool(
+  "add_chapter",
+  {
+    title: "Add chapter",
+    description:
+      "Appends a chapter written in Markdown: ## headings, paragraphs, **bold**, *italic*, [links](https://…), > quotes, - lists, 1. lists, --- scene breaks, and footnotes (text[^1] with a '[^1]: note' line). Don't repeat the chapter title as a heading.",
+    inputSchema: { publication_id: id, title: z.string().min(1).max(200), markdown: z.string().max(800_000) },
+  },
+  ({ publication_id, title, markdown }) => run(() => api("POST", `/publications/${publication_id}/chapters`, { title, markdown })),
+);
+
+server.registerTool(
+  "get_chapter",
+  { title: "Get chapter", description: "A chapter's current draft as Markdown, with its revision number.", inputSchema: { publication_id: id, chapter_id: z.string() } },
+  ({ publication_id, chapter_id }) => run(() => api("GET", `/publications/${publication_id}/chapters/${chapter_id}`)),
+);
+
+server.registerTool(
+  "update_chapter",
+  {
+    title: "Update chapter",
+    description: "Replaces a chapter's title and/or Markdown. Pass base_rev from get_chapter to refuse overwriting someone else's newer change.",
+    inputSchema: { publication_id: id, chapter_id: z.string(), title: z.string().min(1).max(200).optional(), markdown: z.string().max(800_000).optional(), base_rev: z.number().int().positive().optional() },
+  },
+  ({ publication_id, chapter_id, ...rest }) => run(() => api("PUT", `/publications/${publication_id}/chapters/${chapter_id}`, rest)),
+);
+
+server.registerTool(
+  "delete_chapter",
+  { title: "Delete chapter", description: "Deletes a draft chapter. Published editions keep their copy.", inputSchema: { publication_id: id, chapter_id: z.string() } },
+  ({ publication_id, chapter_id }) => run(() => api("DELETE", `/publications/${publication_id}/chapters/${chapter_id}`)),
+);
+
+server.registerTool(
+  "reorder_chapters",
+  { title: "Reorder chapters", description: "Sets the reading order. Pass every chapter id exactly once.", inputSchema: { publication_id: id, order: z.array(z.string()).min(1) } },
+  ({ publication_id, order }) => run(() => api("POST", `/publications/${publication_id}/chapters/reorder`, { order })),
+);
+
+server.registerTool(
+  "publish",
+  {
+    title: "Publish",
+    description: "Seals the current draft as an immutable edition and makes it readable (publicly if visibility is PUBLIC). Republishes as a new edition if already published. Optional effective_at backdates the publication (ISO date-time in the past).",
+    inputSchema: { publication_id: id, effective_at: z.string().optional() },
+  },
+  ({ publication_id, effective_at }) =>
+    run(async () => {
+      const pub = (await api("GET", `/publications/${publication_id}`)) as { status: string };
+      const command = pub.status === "PUBLISHED" ? "republish" : "publish";
+      return api("POST", `/publications/${publication_id}/lifecycle`, { command, ...(effective_at ? { effective_at } : {}) });
+    }),
+);
+
+server.registerTool(
+  "schedule",
+  { title: "Schedule", description: "Publishes automatically at a future time (ISO date-time, at least a minute ahead). Checked every 15 minutes.", inputSchema: { publication_id: id, at: z.string() } },
+  ({ publication_id, at }) => run(() => api("POST", `/publications/${publication_id}/lifecycle`, { command: "schedule", at })),
+);
+
+server.registerTool(
+  "change_status",
+  {
+    title: "Change status",
+    description: "Other lifecycle steps: submit (for review), returnToDraft, cancelSchedule, withdraw (unpublish, keeps editions), archive, restore.",
+    inputSchema: { publication_id: id, command: z.enum(["submit", "returnToDraft", "cancelSchedule", "withdraw", "archive", "restore"]) },
+  },
+  ({ publication_id, command }) => run(() => api("POST", `/publications/${publication_id}/lifecycle`, { command })),
+);
+
+server.registerTool(
+  "set_visibility",
+  {
+    title: "Set visibility",
+    description: "PUBLIC = listed and open to everyone. UNLISTED or PRIVATE = not listed anywhere; readable only through secret links (create_share_link).",
+    inputSchema: { publication_id: id, visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]) },
+  },
+  ({ publication_id, visibility }) => run(() => api("PUT", `/publications/${publication_id}/visibility`, { visibility })),
+);
+
+server.registerTool(
+  "create_share_link",
+  {
+    title: "Create secret link",
+    description: "A secret URL that opens this publication for anyone holding it, even when private. Returned once; store it. Optional expiry in days.",
+    inputSchema: { publication_id: id, label: z.string().max(80).optional(), expires_in_days: z.number().int().min(1).max(3650).optional() },
+  },
+  ({ publication_id, label, expires_in_days }) => run(() => api("POST", `/publications/${publication_id}/share-links`, { label: label ?? "", expires_in_days: expires_in_days ?? null })),
+);
+
+server.registerTool(
+  "list_share_links",
+  { title: "List secret links", description: "Links for a publication with their status (the URLs themselves aren't stored).", inputSchema: { publication_id: id } },
+  ({ publication_id }) => run(() => api("GET", `/publications/${publication_id}/share-links`)),
+);
+
+server.registerTool(
+  "revoke_share_link",
+  { title: "Revoke secret link", description: "Stops a link working immediately.", inputSchema: { publication_id: id, link_id: z.string() } },
+  ({ publication_id, link_id }) => run(() => api("DELETE", `/publications/${publication_id}/share-links/${link_id}`)),
+);
+
+await server.connect(new StdioServerTransport());

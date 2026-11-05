@@ -25,6 +25,8 @@ type Props = {
   workTitle: string;
   chapter: { slug: string; title: string };
   toc: TocItem[];
+  /** False for secret-link reading: nothing is stored on the reader's account. */
+  accountSync?: boolean;
   children: ReactNode;
 };
 
@@ -33,7 +35,7 @@ type Panel = null | "contents" | "settings";
 /** Signed-in progress is sent at most this often while reading (and once as the page closes). */
 const REMOTE_PROGRESS_MS = 15_000;
 
-export function ReaderShell({ workId, base, workTitle, chapter, toc, children }: Props) {
+export function ReaderShell({ workId, base, workTitle, chapter, toc, accountSync = true, children }: Props) {
   const articleRef = useRef<HTMLDivElement>(null);
   const [panel, setPanel] = useState<Panel>(null);
   const [progress, setProgress] = useState(0);
@@ -43,7 +45,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
   const hydrated = useHydrated();
   const prefs = parsePrefs(parseJson<Partial<ReaderPrefs> | null>(useStored(PREFS_KEY), null));
   const storedBookmarks = useStored(bookmarksKey(workId));
-  const { state: account, reload: reloadAccount } = useReaderAccount(workId);
+  const { state: account, reload: reloadAccount } = useReaderAccount(workId, accountSync);
   const signedIn = account.status === "signed-in";
   // Signed in: bookmarks live on the account. Otherwise: on this device.
   const bookmarks: (Bookmark & { id?: string })[] =

@@ -9,6 +9,7 @@ export const metadata: Metadata = {
   description: site.tagline,
   applicationName: site.name,
   openGraph: { siteName: site.name, type: "website" },
+  twitter: { card: "summary_large_image" },
 };
 
 export const viewport: Viewport = {

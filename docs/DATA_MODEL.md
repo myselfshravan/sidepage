@@ -20,9 +20,11 @@ All access is through the Admin SDK on the server. Security rules deny every cli
 | `editions/{id}/parts/{token}-{ordinal}-{part}` | Chapter snapshot (one or more parts per chapter) | publishing service | public read model |
 | `published/{workId}` | Public read model: `live`, `listed`, `visibility`, `current_edition_id`, card metadata, dates | publishing and visibility services | public pages |
 | `slugs/{slug}` | Global slug reservation → `work_id` | created in a transaction with the work | public pages |
+| `share_links/{sha256(token)}` | Secret link → `work_id`, `label`, `expires_at`, `revoked_at`, `last_opened_at`. The token itself is never stored. | owner, admin | secret-link pages |
+| `api_tokens/{sha256(token)}` | Agent token → `owner_uid`, `name`, `hint`, `last_used_at`, `revoked_at` | admins | `/api/v1` auth |
 | `rate_limits/{sha256}` | Fixed-window counters, keyed by a salted hash (no raw IPs or uids) | rate limiter | rate limiter |
 
-Deferred collections (designed, not created yet): `grants`, `invitations`, `share_links`, `assets`, `ingest_batches`, `story_entities`, `story_connections`, `audit_events`.
+Deferred collections (designed, not created yet): `grants`, `invitations`, `assets`, `ingest_batches`, `story_entities`, `story_connections`, `audit_events`.
 
 ## Dates
 
@@ -71,3 +73,7 @@ Deferred collections (designed, not created yet): `grants`, `invitations`, `shar
 | `rate_limits` | Carry `expires_at`; configure a Firestore TTL policy on that field. |
 | Abandoned SEALING claims | Swept after one hour. |
 | Automatic revisions | Pruning is planned (keep checkpoints, last 50 automatic, one per day). |
+
+## Bylines
+
+`works.byline` and the edition metadata carry `profile`, `pen_name` or `anonymous`. `published.public_author_uid` is the owner only for `profile`; otherwise it is `null` and `author_handle` is empty (see D19).

@@ -17,7 +17,8 @@
     "check:secrets": "bash scripts/check-secrets.sh",
     "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:secrets",
     "check:credentials": "tsx --conditions=react-server scripts/check-credentials.ts",
-    "grant-admin": "tsx --conditions=react-server scripts/grant-admin.ts"
+    "grant-admin": "tsx --conditions=react-server scripts/grant-admin.ts",
+    "mcp": "tsx scripts/mcp/sidepage-mcp.mts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.4.0",
@@ -42,6 +43,9 @@
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^6.0.0",
+    "@fontsource/bodoni-moda": "^5.3.0",
+    "@fontsource/newsreader": "^5.3.0",
+    "@modelcontextprotocol/sdk": "^1.32.2",
     "@next/env": "16.4.5",
     "@playwright/test": "^1.64.1",
     "@tailwindcss/turbopack": "^4",

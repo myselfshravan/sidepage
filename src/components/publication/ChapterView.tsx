@@ -7,15 +7,19 @@ import { READER_PREFS_SCRIPT } from "@/components/reader/prefs";
 import { ReaderShell } from "@/components/reader/ReaderShell";
 import type { Collection } from "@/domain/types";
 import { formatMinutes, formatWords, romanize } from "@/lib/format";
-import { getPublicChapter } from "@/server/read/public";
+import { getPublicChapter, type PublicChapter } from "@/server/read/public";
 
 export async function ChapterView({ collection, params }: { collection: Collection; params: Promise<{ slug: string; chapter: string }> }) {
   const { slug, chapter: chapterSlug } = await params;
   const data = await getPublicChapter(collection, slug, chapterSlug);
   if (!data) notFound();
+  return <ChapterBody data={data} base={`/${collection}/${data.work.slug}`} shared={false} />;
+}
+
+/** The reader itself. `shared` chapters are opened by a secret link: reading state stays on the device. */
+export function ChapterBody({ data, base, shared }: { data: PublicChapter; base: string; shared: boolean }) {
   const { work, toc, chapter, prev, next } = data;
-  const base = `/${collection}/${work.slug}`;
-  const fiction = collection === "fiction";
+  const fiction = work.collection === "fiction";
   const minutes = Math.max(1, Math.round(chapter.wordCount / 238));
 
   const article = (
@@ -64,7 +68,7 @@ export async function ChapterView({ collection, params }: { collection: Collecti
   return (
     <>
       <InlineScript code={READER_PREFS_SCRIPT} />
-      <ReaderShell workId={work.workId} base={base} workTitle={work.title} chapter={{ slug: chapter.slug, title: chapter.title }} toc={toc}>
+      <ReaderShell workId={work.workId} base={base} workTitle={work.title} chapter={{ slug: chapter.slug, title: chapter.title }} toc={toc} accountSync={!shared}>
         {fiction && work.contentWarnings.length > 0 ? (
           <ContentWarningGate workId={work.workId} warnings={work.contentWarnings} backHref={base}>
             {article}

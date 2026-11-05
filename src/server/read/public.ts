@@ -3,7 +3,8 @@ import { cacheLife, cacheTag } from "next/cache";
 import { formatPartialDate } from "@/domain/dates/partial-date";
 import type { ManuscriptDoc } from "@/domain/manuscript/schema";
 import type { Collection } from "@/domain/types";
-import { col, partId, type EditionDoc, type EditionPartDoc, type HandleDoc, type PublishedDoc, type SlugDoc, type UserDoc } from "../firebase/model";
+import { col, type HandleDoc, type PublishedDoc, type SlugDoc, type UserDoc } from "../firebase/model";
+import { loadChapter, loadEdition } from "./editions";
 
 // Public reads. Everything here is cacheable and shared between all visitors, so it
 // may only return content that is PUBLISHED and PUBLIC. It reads `slugs`,
@@ -16,7 +17,7 @@ import { col, partId, type EditionDoc, type EditionPartDoc, type HandleDoc, type
 
 export type PublicWork = {
   workId: string;
-  ownerUid: string;
+  /** Empty when the work is under a pen name or anonymous: then there is no author page to link. */
   authorHandle: string;
   editionId: string;
   collection: Collection;
@@ -48,10 +49,9 @@ function isPublic(p: PublishedDoc | undefined): p is PublishedDoc {
   return !!p && p.live && p.visibility === "PUBLIC";
 }
 
-function toPublicWork(p: PublishedDoc): PublicWork {
+export function toPublicWork(p: PublishedDoc): PublicWork {
   return {
     workId: p.work_id,
-    ownerUid: p.owner_uid,
     authorHandle: p.author_handle,
     editionId: p.current_edition_id,
     collection: p.collection,
@@ -139,33 +139,7 @@ export async function listPublicWorksByAuthor(ownerUid: string, limit = 48): Pro
   "use cache";
   cacheLife("max");
   cacheTag("catalog", `owner:${ownerUid}`);
-  const snap = await col.published().where("listed", "==", true).where("owner_uid", "==", ownerUid).orderBy("sort_at", "desc").limit(Math.min(limit, 100)).get();
+  // Only works credited to the profile: pen-name and anonymous works never appear here.
+  const snap = await col.published().where("listed", "==", true).where("public_author_uid", "==", ownerUid).orderBy("sort_at", "desc").limit(Math.min(limit, 100)).get();
   return snap.docs.map((d) => d.data() as PublishedDoc).filter(isPublic).map(toPublicWork);
-}
-
-// Sealed editions never change, so their content is cached indefinitely by id.
-
-type LoadedEdition = { id: string; sealToken: string; toc: EditionDoc["toc"] };
-
-async function loadEdition(editionId: string): Promise<LoadedEdition | null> {
-  "use cache";
-  cacheLife("max");
-  cacheTag(`edition:${editionId}`);
-  const e = (await col.edition(editionId).get()).data() as EditionDoc | undefined;
-  if (!e || e.state !== "SEALED") return null;
-  return { id: editionId, sealToken: e.seal_token, toc: e.toc };
-}
-
-async function loadChapter(editionId: string, chapterSlug: string): Promise<ManuscriptDoc | null> {
-  "use cache";
-  cacheLife("max");
-  cacheTag(`edition:${editionId}`);
-  const edition = await loadEdition(editionId);
-  const entry = edition?.toc.find((t) => t.slug === chapterSlug);
-  if (!edition || !entry) return null;
-  const refs = Array.from({ length: entry.parts }, (_, i) => col.parts(editionId).doc(partId(edition.sealToken, entry.ordinal, i)));
-  const snaps = await Promise.all(refs.map((r) => r.get()));
-  const parts = snaps.map((s) => s.data() as EditionPartDoc | undefined);
-  if (parts.some((p) => !p || p.seal_token !== edition.sealToken)) return null;
-  return { type: "doc", content: parts.flatMap((p) => p!.doc.content) };
 }

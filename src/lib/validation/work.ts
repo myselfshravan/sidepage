@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { checkPartialDate, isValidTimeZone } from "@/domain/dates/partial-date";
 import { checkSlug } from "@/domain/publication/slug";
-import { COLLECTIONS, VISIBILITIES } from "@/domain/types";
+import { BYLINES, COLLECTIONS, VISIBILITIES } from "@/domain/types";
 
 // Validation for every author-supplied input. Shared by server actions (authoritative)
 // and forms (for early feedback).
@@ -36,7 +36,9 @@ export const workMetadataSchema = z.object({
   title: text(200).min(1, "Give it a title."),
   subtitle: text(300),
   description: text(2000),
-  author_name: text(120).min(1, "Add the author's name."),
+  byline: z.enum(BYLINES).default("profile"),
+  /** The pen name when byline is "pen_name"; ignored otherwise. */
+  author_name: text(120),
   slug: slugSchema,
   content_warnings: z.array(text(80).min(1)).max(20),
   seo_title: text(120),
@@ -45,7 +47,7 @@ export const workMetadataSchema = z.object({
   original_written_at: partialDateSchema.nullable(),
   /** ISO instant, or null. When the physical work was digitised. */
   digitized_at: z.iso.datetime({ offset: true }).nullable(),
-});
+}).refine((d) => d.byline !== "pen_name" || d.author_name.length > 0, { message: "Add the pen name.", path: ["author_name"] });
 
 export const visibilitySchema = z.enum(VISIBILITIES);
 

@@ -117,7 +117,7 @@ describe("chapters and autosave", () => {
     const { chapterId } = await createChapter(author, workId, "One", t0);
     await expect(
       saveChapter(author, { workId, chapterId, baseRev: 1, title: "One", doc: { type: "doc", content: [{ type: "script" }] } }, t0),
-    ).rejects.toThrow(/not allowed/);
+    ).rejects.toMatchObject({ code: "INVALID", message: expect.stringMatching(/not allowed/) });
   });
 
   it("keeps automatic revisions on a cadence, plus explicit checkpoints", async () => {

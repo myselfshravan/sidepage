@@ -24,6 +24,8 @@
 | Security headers: CSP, HSTS, `X-Frame-Options: DENY`, `frame-ancestors 'none'`, nosniff, Referrer-Policy, Permissions-Policy, COOP `same-origin-allow-popups` | `next.config.ts` |
 | Public vs private reads: public pages read only `src/server/read/public.ts`, which serves PUBLISHED + PUBLIC sealed editions; lint bans `'use cache'` in private code; studio responses are `private, no-store`, `noindex` | eslint.config.mjs, next.config.ts |
 | Cron: `Authorization: Bearer CRON_SECRET`, compared in constant time | `src/app/api/cron/publish-due/route.ts` |
+| Agent API: bearer personal access tokens (hashed, revocable, admin-issued), per-owner rate limit, same services and ownership checks as the studio | `src/app/api/v1/[...path]/route.ts`, `src/server/services/api-tokens.ts` |
+| Secret links: 256-bit tokens stored hashed; checked live on every request; `no-store`, `noindex`, `no-referrer`; generic link previews | `src/server/read/shared.ts`, `next.config.ts` |
 | Credentials: Workload Identity Federation from Vercel OIDC (no long-lived keys); Admin SDK only behind `server-only` | `src/server/firebase/admin.ts` |
 
 ### Why the CSP allows inline scripts
@@ -53,4 +55,8 @@ Pages are prerendered (partial prerendering), and per-request nonces would force
 | Published editions never change when the draft changes; republishing preserves earlier editions; hashes verify | publishing.test.ts, publishing.spec.ts |
 | Concurrent publishes produce exactly one edition | publishing.test.ts |
 
-Deferred, to be added with invitations: invited readers can't access unrelated works; revoked readers lose access immediately; storage access matches publication access.
+| Secret links open only their own work; revoked, expired or malformed links and withdrawn works fail immediately; only owners and admins manage links; tokens are never stored | `tests/integration/sharing.test.ts`, `tests/e2e/agent.spec.ts` |
+| Pen-name and anonymous works expose no handle, account id or real name anywhere public, and never appear on the author page | `sharing.test.ts`, `agent.spec.ts` |
+| API tokens: admin-created only, stored hashed, refused when revoked, malformed or when the owner can't write; the API refuses missing or bad tokens | `sharing.test.ts`, `agent.spec.ts` |
+
+Still deferred: storage access matching publication access, which arrives with uploads on Blaze.

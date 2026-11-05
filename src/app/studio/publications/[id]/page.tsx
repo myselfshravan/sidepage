@@ -5,12 +5,14 @@ import { ChaptersPanel } from "@/components/studio/ChaptersPanel";
 import { DuplicateButton } from "@/components/studio/DuplicateButton";
 import { MetadataForm } from "@/components/studio/MetadataForm";
 import { PublishPanel } from "@/components/studio/PublishPanel";
+import { ShareLinksPanel } from "@/components/studio/ShareLinksPanel";
 import { VisibilityControl } from "@/components/studio/VisibilityControl";
 import { Panel, StatusBadge, VisibilityBadge } from "@/components/studio/ui";
 import { COLLECTION_LABEL } from "@/domain/types";
 import { formatDateInZone, formatWords } from "@/lib/format";
 import { listChapters } from "@/server/services/chapters";
 import { listEditions } from "@/server/services/publishing";
+import { listShareLinks } from "@/server/services/share-links";
 import { getManagedWork, listEvents } from "@/server/services/works";
 import { requireWriterPage } from "@/server/auth/session";
 import { actorFrom } from "@/server/services/actor";
@@ -23,7 +25,7 @@ export default async function PublicationPage({ params }: PageProps<"/studio/pub
   const { id } = await params;
   const work = await getManagedWork(actor, id);
   if (!work) notFound();
-  const [chapters, editions, events] = await Promise.all([listChapters(actor, id), listEditions(actor, id), listEvents(actor, id)]);
+  const [chapters, editions, events, links] = await Promise.all([listChapters(actor, id), listEditions(actor, id), listEvents(actor, id), listShareLinks(actor, id)]);
   const tz = work.timezone;
   const iso = (t: { toDate(): Date } | null) => (t ? t.toDate().toISOString() : null);
   const publicHref = `/${work.collection}/${work.slug}`;
@@ -66,6 +68,7 @@ export default async function PublicationPage({ params }: PageProps<"/studio/pub
               subtitle: work.subtitle,
               description: work.description,
               author_name: work.author_name,
+              byline: work.byline ?? "profile",
               slug: work.slug,
               content_warnings: work.content_warnings,
               seo_title: work.seo_title,
@@ -86,6 +89,7 @@ export default async function PublicationPage({ params }: PageProps<"/studio/pub
             scheduledFor={iso(work.scheduled_for)}
           />
           <VisibilityControl workId={id} visibility={work.visibility} />
+          <ShareLinksPanel workId={id} links={links} live={work.status === "PUBLISHED"} />
 
           <Panel id="dates" title="Dates" description={`Shown in ${tz}.`}>
             <dl className="space-y-2 text-sm">

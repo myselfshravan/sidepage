@@ -80,9 +80,13 @@ function Shelf({ title, items, showProgress = false }: { title: string; items: L
                 </Link>
                 <p className="meta">
                   {COLLECTION_LABEL[w.collection]}, by{" "}
-                  <Link href={`/authors/${w.authorHandle}`} className="link-quiet">
-                    {w.authorName}
-                  </Link>
+                  {w.authorHandle ? (
+                    <Link href={`/authors/${w.authorHandle}`} className="link-quiet">
+                      {w.authorName}
+                    </Link>
+                  ) : (
+                    w.authorName
+                  )}
                 </p>
               </div>
               {showProgress && w.progress ? (
