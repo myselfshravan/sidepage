@@ -16,9 +16,7 @@ Variables are documented in `.env.example`, which also notes which are public an
 
 The project belongs to `shravanrevanna@gmail.com`. The machine's default firebase-tools login is a different account, so use `--account shravanrevanna@gmail.com` or run `firebase login:use shravanrevanna@gmail.com` first.
 
-1. **Firestore:** Console → Build → Firestore → Create database, Native mode.
-   - Pick the region once; it can never change.
-   - Recommended: `asia-south1` (Mumbai), matching Vercel region `bom1`.
+1. **Firestore:** done. The `(default)` database exists in **`nam5`** (US multi-region), Native mode, which is permanent. Vercel functions therefore run in `iad1` (`vercel.ts`). Rules and indexes are deployed.
 2. **Authentication:**
    - Enable **Google**.
    - Under Settings → Authorized domains, add the Vercel production domain and `*.vercel.app` preview hosts as needed.
@@ -45,7 +43,7 @@ No service-account key is created. Vercel issues each deployment an OIDC token, 
 Implemented in `src/server/firebase/admin.ts`. **Verified only against the emulators so far.** The real exchange is verified on the first preview deployment.
 
 ```bash
-P=sidepage-c4daa; N=$(gcloud projects describe $P --format='value(projectNumber)'); TEAM=<vercel-team-slug>
+P=sidepage-c4daa; N=854947687129; TEAM=myselfshravans-projects
 gcloud iam service-accounts create sidepage-app --project $P
 for r in roles/datastore.user roles/firebaseauth.admin; do
   gcloud projects add-iam-policy-binding $P --member="serviceAccount:sidepage-app@$P.iam.gserviceaccount.com" --role=$r
@@ -93,7 +91,7 @@ vercel git connect
 
 Settings:
 - Framework: Next.js. Install `pnpm install --frozen-lockfile`. Build `pnpm build`.
-- Function region `bom1`, matching Firestore.
+- Function region `iad1`, next to Firestore `nam5` (set in `vercel.ts`).
 - Production branch `main`. Preview deployments for all other branches and PRs.
 
 Environment variables per environment:

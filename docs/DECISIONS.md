@@ -53,3 +53,7 @@ Each entry: the decision, why, and what it costs.
 ### D13. Reader progress, bookmarks and preferences are stored on the device
 - **Why:** release 1 has public reading only, with no reader accounts. Synced progress arrives with invited readers.
 - **Not stored on the device:** draft manuscripts. Recovery uses server autosave and revisions only.
+
+### D14. Regions: Firestore `nam5`, Vercel functions `iad1`
+- **Why:** the `(default)` database was created in `nam5` (US multi-region) before this plan's `asia-south1` recommendation was applied. A Firestore location is permanent, so functions run in `iad1` to keep Admin SDK round-trips short.
+- **Cost:** readers in India get CDN-cached public pages, so this matters mainly for studio latency.
