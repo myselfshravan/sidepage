@@ -1,0 +1,9 @@
+# Never upload local secrets or artifacts in CLI deployments (git deployments only see tracked files).
+.env
+.env.*
+!.env.example
+.artifacts
+emulator-data
+test-results
+playwright-report
+*.log
