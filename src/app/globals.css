@@ -1,26 +1,397 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * sidepage design tokens.
+ *
+ * Components use semantic tokens only (bg-paper, text-ink, border-rule …). Each
+ * section of the site sets `data-theme` on its root, which swaps the values:
+ *   house   – home, about, sign-in: the memoir paper with a little more neutrality
+ *   memoir  – warm ivory, sepia ink, Newsreader + IBM Plex Mono captions
+ *   fiction – deep charcoal, burgundy, Bodoni Moda + Crimson Pro
+ *   studio  – neutral working surface for the author, Geist
+ * The reader can additionally flip any theme to light or dark.
+ */
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--bg);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
+  --color-ink: var(--ink);
+  --color-muted: var(--ink-muted);
+  --color-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-text);
+  --color-on-accent: var(--on-accent);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+
+  --font-display: var(--theme-display);
+  --font-body: var(--theme-body);
+  --font-meta: var(--theme-meta);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --ease-page: cubic-bezier(0.2, 0, 0, 1);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --measure: 64ch;
+  --radius: 2px;
+}
+
+[data-theme="house"],
+[data-theme="memoir"] {
+  --bg: #f6f1e7;
+  --surface: #fbf8f1;
+  --surface-raised: #fffdf8;
+  --ink: #2b2620;
+  --ink-muted: #6b6257;
+  --ink-faint: #8f8576;
+  --rule: #d9cfbf;
+  --accent: #8a5a3b;
+  --accent-text: #7c4f32;
+  --on-accent: #fbf8f1;
+  --focus: #8a5a3b;
+  --danger: #a1282e;
+  --success: #2f6b3f;
+  --warning: #8a6100;
+  --theme-display: var(--font-newsreader), Georgia, serif;
+  --theme-body: var(--font-newsreader), Georgia, serif;
+  --theme-meta: var(--font-plex-mono), ui-monospace, monospace;
+  color-scheme: light;
+}
+
+[data-theme="fiction"] {
+  --bg: #141214;
+  --surface: #1d1a1c;
+  --surface-raised: #262225;
+  --ink: #ece6e1;
+  --ink-muted: #a39a95;
+  --ink-faint: #7d7470;
+  --rule: #332d30;
+  --accent: #6e1e2b;
+  --accent-text: #d98a8c;
+  --on-accent: #f4ece8;
+  --focus: #f2c7b8;
+  --danger: #e0868a;
+  --success: #8fc59c;
+  --warning: #e2bd6b;
+  --signal: #b5444b;
+  --theme-display: var(--font-bodoni), "Didot", serif;
+  --theme-body: var(--font-crimson), Georgia, serif;
+  --theme-meta: var(--font-plex-mono), ui-monospace, monospace;
+  color-scheme: dark;
+}
+
+[data-theme="studio"] {
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --ink: #1c1917;
+  --ink-muted: #57534e;
+  --ink-faint: #78716c;
+  --rule: #e7e5e4;
+  --accent: #3f5f4a;
+  --accent-text: #35513f;
+  --on-accent: #ffffff;
+  --focus: #2f5bd3;
+  --danger: #a1282e;
+  --success: #2f6b3f;
+  --warning: #8a6100;
+  --radius: 6px;
+  --theme-display: var(--font-newsreader), Georgia, serif;
+  --theme-body: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --theme-meta: var(--font-geist-mono), ui-monospace, monospace;
+  color-scheme: light;
+}
+
+/* Reader light/dark override, chosen by the reader (set before paint). */
+html[data-reader-mode="dark"] [data-theme="memoir"] [data-reader] {
+  --bg: #1e1b17;
+  --surface: #26221d;
+  --surface-raised: #2e2923;
+  --ink: #e8e0d2;
+  --ink-muted: #a79c8b;
+  --ink-faint: #857b6c;
+  --rule: #3a342c;
+  --accent: #c99a73;
+  --accent-text: #d4ac88;
+  --focus: #d4ac88;
+  color-scheme: dark;
+}
+html[data-reader-mode="light"] [data-theme="fiction"] [data-reader] {
+  --bg: #efeae6;
+  --surface: #f7f3f0;
+  --surface-raised: #fbf9f7;
+  --ink: #1a1718;
+  --ink-muted: #5e5557;
+  --ink-faint: #7b7173;
+  --rule: #d6cccb;
+  --accent: #7a2230;
+  --accent-text: #7a2230;
+  --focus: #7a2230;
+  color-scheme: light;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    margin: 0;
+  }
+  [data-theme],
+  [data-reader] {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--theme-body);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: var(--radius);
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+  }
+  a {
+    color: inherit;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .skip-link {
+    position: absolute;
+    left: 1rem;
+    top: -4rem;
+    z-index: 100;
+    padding: 0.5rem 0.75rem;
+    background: var(--ink);
+    color: var(--bg);
+    font-family: var(--theme-meta);
+    font-size: 0.8rem;
+  }
+  .skip-link:focus {
+    top: 1rem;
+  }
+
+  /* Small archival caption: dates, word counts, metadata. */
+  .meta {
+    font-family: var(--theme-meta);
+    font-size: 0.75rem;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+  }
+
+  .link-quiet {
+    text-decoration: underline;
+    text-decoration-color: var(--rule);
+    text-underline-offset: 0.2em;
+    transition: text-decoration-color 160ms var(--ease-page);
+  }
+  .link-quiet:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .paper-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.3 0 0 0 0 0.25 0 0 0 0 0.2 0 0 0 0.05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .film-grain {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.035 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .credits {
+    font-family: var(--theme-display);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+  }
+
+  /* ---------- Reader prose ---------- */
+  .prose-reader {
+    --reader-size: 1.1875rem;
+    --reader-leading: 1.68;
+    max-width: var(--measure);
+    margin-inline: auto;
+    font-family: var(--reader-family, var(--theme-body));
+    font-size: var(--reader-size);
+    line-height: var(--reader-leading);
+    font-variant-numeric: oldstyle-nums proportional-nums;
+    hanging-punctuation: first;
+    hyphens: auto;
+    overflow-wrap: break-word;
+  }
+  [data-theme="fiction"] .prose-reader {
+    --reader-size: 1.15rem;
+    --reader-leading: 1.62;
+  }
+  html[data-reader-size="1"] .prose-reader { --reader-size: 1rem; }
+  html[data-reader-size="2"] .prose-reader { --reader-size: 1.0625rem; }
+  html[data-reader-size="4"] .prose-reader { --reader-size: 1.3125rem; }
+  html[data-reader-size="5"] .prose-reader { --reader-size: 1.5rem; }
+  html[data-reader-leading="tight"] .prose-reader { --reader-leading: 1.45; }
+  html[data-reader-leading="loose"] .prose-reader { --reader-leading: 1.95; }
+  html[data-reader-family="sans"] .prose-reader { --reader-family: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif; }
+
+  .prose-reader > * + * {
+    margin-top: 1em;
+  }
+  .prose-reader p {
+    margin: 0;
+  }
+  .prose-reader p + p {
+    margin-top: 0;
+    text-indent: 1.5em;
+  }
+  .prose-reader h2,
+  .prose-reader h3,
+  .prose-reader h4 {
+    font-family: var(--theme-display);
+    font-weight: 500;
+    line-height: 1.2;
+    margin-top: 2.2em;
+    margin-bottom: 0.6em;
+    text-wrap: balance;
+  }
+  .prose-reader h2 { font-size: 1.45em; }
+  .prose-reader h3 { font-size: 1.2em; }
+  .prose-reader h4 { font-size: 1em; font-variant-caps: all-small-caps; letter-spacing: 0.06em; }
+  [data-theme="fiction"] .prose-reader h2 {
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 1.15em;
+  }
+  .prose-reader h2 + p,
+  .prose-reader h3 + p,
+  .prose-reader h4 + p,
+  .prose-reader hr + p,
+  .prose-reader blockquote + p {
+    text-indent: 0;
+  }
+  .prose-reader blockquote {
+    margin: 1.6em 0;
+    padding-left: 1.25em;
+    border-left: 1px solid var(--rule);
+    font-style: italic;
+    color: var(--ink-muted);
+  }
+  .prose-reader blockquote p + p {
+    text-indent: 0;
+    margin-top: 0.8em;
+  }
+  .prose-reader ul,
+  .prose-reader ol {
+    padding-left: 1.4em;
+  }
+  .prose-reader ul { list-style: disc; }
+  .prose-reader ol { list-style: decimal; }
+  .prose-reader li + li { margin-top: 0.3em; }
+  .prose-reader li p + p { text-indent: 0; }
+  .prose-reader a {
+    color: var(--accent-text);
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+  .prose-reader hr.scene-break {
+    border: 0;
+    margin: 2.4em auto;
+    height: 1em;
+    text-align: center;
+    overflow: visible;
+  }
+  .prose-reader hr.scene-break::after {
+    content: "⁂";
+    color: var(--ink-faint);
+    font-size: 1rem;
+    letter-spacing: 0;
+  }
+  [data-theme="fiction"] .prose-reader hr.scene-break::after {
+    content: "";
+    display: block;
+    width: 3rem;
+    height: 1px;
+    margin: 0.5em auto 0;
+    background: var(--signal, var(--accent));
+  }
+  .prose-reader .noteref a {
+    font-family: var(--theme-meta);
+    font-size: 0.68em;
+    text-decoration: none;
+    padding: 0 0.15em;
+  }
+  .prose-reader .endnotes {
+    margin-top: 3em;
+    font-size: 0.85em;
+    color: var(--ink-muted);
+  }
+  .prose-reader .endnotes hr {
+    width: 4rem;
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin: 0 0 1.2em;
+  }
+  .prose-reader .endnotes ol { list-style: decimal; }
+  .prose-reader .endnotes .backref { text-decoration: none; }
+
+  /* Drop cap on the first paragraph of a memoir chapter. */
+  [data-theme="memoir"] .prose-reader.has-dropcap > p:first-of-type::first-letter {
+    float: left;
+    font-family: var(--theme-display);
+    font-size: 3.4em;
+    line-height: 0.82;
+    padding: 0.06em 0.08em 0 0;
+    color: var(--accent);
+  }
+
+  /* ---------- Editor surface (studio) ---------- */
+  .editor-surface .ProseMirror {
+    outline: none;
+    min-height: 60vh;
+  }
+  .editor-surface .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--ink-faint);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+  .editor-surface .footnote-chip {
+    font-family: var(--font-geist-mono), ui-monospace, monospace;
+    font-size: 0.65em;
+    vertical-align: super;
+    padding: 0 0.3em;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+    color: var(--accent-text);
+    cursor: help;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .paper-grain,
+  .film-grain {
+    background-image: none;
+  }
+  [data-theme] {
+    --rule: var(--ink-muted);
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }

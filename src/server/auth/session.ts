@@ -1,6 +1,7 @@
 import "server-only";
 import type { DecodedIdToken } from "firebase-admin/auth";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 import { cache } from "react";
 import { serverEnv } from "@/lib/env.server";
@@ -58,6 +59,8 @@ export async function verifySession(cookie: string | undefined): Promise<Viewer 
 
 /** The signed-in author for this request, or null. Memoised per request. */
 export const getViewer = cache(async (): Promise<Viewer | null> => {
+  // Session-derived content is request-time only: never part of a prerendered or prefetched shell.
+  await connection();
   const store = await cookies();
   return verifySession(store.get(SESSION_COOKIE)?.value);
 });

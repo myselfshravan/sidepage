@@ -272,3 +272,34 @@ export async function dashboardStats() {
     upcoming: upcoming.docs.map((d) => toSummary(d.id, d.data() as WorkDoc)),
   };
 }
+
+export type EventSummary = {
+  id: string;
+  type: WorkEventDoc["type"];
+  occurredAt: string;
+  effectiveAt: string | null;
+  fromStatus: Status | null;
+  toStatus: Status | null;
+  editionId: string | null;
+  note: string | null;
+  actor: string;
+};
+
+/** The publication's immutable history, newest first. */
+export async function listEvents(workId: string, limit = 50): Promise<EventSummary[]> {
+  const snap = await col.events(workId).orderBy("occurred_at", "desc").limit(limit).get();
+  return snap.docs.map((d) => {
+    const e = d.data() as WorkEventDoc;
+    return {
+      id: d.id,
+      type: e.type,
+      occurredAt: e.occurred_at.toDate().toISOString(),
+      effectiveAt: e.effective_at?.toDate().toISOString() ?? null,
+      fromStatus: e.from_status,
+      toStatus: e.to_status,
+      editionId: e.edition_id,
+      note: e.note,
+      actor: e.actor_uid === "system:scheduler" ? "Scheduler" : "Author",
+    };
+  });
+}

@@ -11,6 +11,9 @@ importers:
       '@google-cloud/firestore':
         specifier: ^9.4.0
         version: 9.4.0
+      '@tiptap/core':
+        specifier: ^3.32.3
+        version: 3.32.3(@tiptap/pm@3.32.3)
       '@tiptap/extension-image':
         specifier: ^3.32.3
         version: 3.32.3(@tiptap/core@3.32.3(@tiptap/pm@3.32.3))
@@ -63,6 +66,9 @@ importers:
       '@firebase/rules-unit-testing':
         specifier: ^6.0.0
         version: 6.0.0(firebase@13.2.0(@types/react@19.3.0)(next@16.4.5(@babel/core@7.29.13)(@opentelemetry/api@1.9.1)(@playwright/test@1.64.1)(@types/node@24.19.2)(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react@19.3.0))
+      '@next/env':
+        specifier: 16.4.5
+        version: 16.4.5
       '@playwright/test':
         specifier: ^1.64.1
         version: 1.64.1
