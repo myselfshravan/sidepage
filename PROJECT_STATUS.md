@@ -1,7 +1,7 @@
 # Project status
 
-**Release 1, the publishing journey: built and verified locally against the Firebase emulators. Not deployed.**
-Last updated 2026-11-05.
+**Release 1, the publishing journey: live at https://sidepage.vercel.app** (Firebase `sidepage-c4daa`, keyless Workload Identity credentials). The author studio is waiting on the first real Google sign-in and `grant-author`.
+Last updated 2026-11-06.
 
 ## Done and verified
 
@@ -36,11 +36,13 @@ The GitHub Actions CI has not run yet; it starts with the first push.
 
 | Item | State |
 |---|---|
-| GitHub repository | **Not created.** Waiting for your go (`gh repo create myselfshravan/sidepage --public`). |
-| Vercel | **Not linked.** Waiting for your go. |
-| Firebase `sidepage-c4daa` | Exists; web app config is in `.env.local`. Firestore database not yet created; rules not deployed; Auth Google provider not confirmed. |
-| Workload Identity Federation | Code written; GCP setup not run (DEPLOYMENT.md §2). |
-| Production project, domain, monitoring, backups | Not started (Phase 9). |
+| GitHub | https://github.com/myselfshravan/sidepage (public). CI green on `86bdca9`. Secrets set: `CRON_SECRET`, `SIDEPAGE_URL`. |
+| Vercel | Project `myselfshravans-projects/sidepage`, production https://sidepage.vercel.app. Node 24 with `NODE_OPTIONS=--experimental-require-module` (see D15). All variables set for Production and Preview. |
+| Auto-deploy from git | **Not working yet.** The repo is linked, but pushes create no deployments, most likely because the Vercel GitHub App's repository access excludes `sidepage`. Current deployments come from the CLI (`vercel deploy --prod`). |
+| Firebase `sidepage-c4daa` | Firestore `(default)` in `nam5`; deny-all rules and indexes deployed; Auth set up with Google enabled; `sidepage.vercel.app` authorized. |
+| Credentials | Workload Identity pool `vercel` → service account `sidepage-app` (roles: `datastore.user`, `firebaseauth.admin`, `serviceusage.serviceUsageConsumer`). No keys exist. Verified: STS exchange, impersonation, Firestore and Auth reads (`pnpm check:credentials`), and the production runtime. |
+| Production checks | Public pages 200 and CDN-cached; security headers present; `/studio` redirects; forged cookie gets no data; cross-site session POST 403; bad token 401; cron without secret 401. |
+| Still open | First Google sign-in plus `grant-author`, then a production publish. Separate `sidepage-prod` project, domain, monitoring, backups (Phase 9). |
 
 ## Known limitations
 

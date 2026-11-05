@@ -57,3 +57,7 @@ Each entry: the decision, why, and what it costs.
 ### D14. Regions: Firestore `nam5`, Vercel functions `iad1`
 - **Why:** the `(default)` database was created in `nam5` (US multi-region) before this plan's `asia-south1` recommendation was applied. A Firestore location is permanent, so functions run in `iad1` to keep Admin SDK round-trips short.
 - **Cost:** readers in India get CDN-cached public pages, so this matters mainly for studio latency.
+
+### D15. `NODE_OPTIONS=--experimental-require-module` on Vercel
+- **Why:** Vercel's Node runtime has `require(esm)` disabled. `firebase-admin` 14 → `jwks-rsa` 4 → `jose` 6 (ESM-only) then fails with `ERR_REQUIRE_ESM` on every Auth call. Reproduced locally with `--no-experimental-require-module`.
+- **Revisit:** remove the flag if firebase-admin ships an ESM-safe dependency chain.
