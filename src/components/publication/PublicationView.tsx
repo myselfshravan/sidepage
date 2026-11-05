@@ -24,7 +24,7 @@ export async function PublicationView({ collection, params }: { collection: Coll
             <Cover collection={collection} title={work.title} subtitle={work.subtitle} author={work.authorName} size="lg" />
           </div>
           <div className="max-w-2xl">
-            <p className="meta uppercase">{fiction ? "A work of fiction" : "A memoir"}</p>
+            <p className="meta">{fiction ? "A work of fiction" : "A memoir"}</p>
             <h1 className={fiction ? "credits mt-4 text-[clamp(2.2rem,6vw,4.5rem)] leading-[1.02]" : "mt-4 font-display text-[clamp(2.6rem,6vw,4.5rem)] leading-[1.02] italic"}>
               {work.title}
             </h1>
@@ -40,7 +40,7 @@ export async function PublicationView({ collection, params }: { collection: Coll
 
             {fiction && work.contentWarnings.length > 0 ? (
               <aside aria-label="Content warnings" className="mt-8 border-l-2 border-[var(--signal,var(--accent))] pl-4">
-                <p className="meta uppercase">Content warnings</p>
+                <p className="meta">Content warnings</p>
                 <p className="mt-1">{work.contentWarnings.join(", ")}</p>
               </aside>
             ) : null}
@@ -48,26 +48,26 @@ export async function PublicationView({ collection, params }: { collection: Coll
             <dl className="meta mt-10 grid grid-cols-2 gap-x-6 gap-y-3 border-y border-rule py-5 sm:grid-cols-4">
               {work.writtenLabel ? (
                 <div>
-                  <dt className="uppercase text-faint">Written</dt>
+                  <dt className="text-faint">Written</dt>
                   <dd className="mt-1 text-ink">{work.writtenLabel}</dd>
                 </div>
               ) : null}
               <div>
-                <dt className="uppercase text-faint">Published</dt>
+                <dt className="text-faint">Published</dt>
                 <dd className="mt-1 text-ink">
                   <time dateTime={work.firstPublishedAt}>{formatDate(work.firstPublishedAt)}</time>
                 </dd>
               </div>
               {work.lastPublishedAt !== work.firstPublishedAt ? (
                 <div>
-                  <dt className="uppercase text-faint">This edition</dt>
+                  <dt className="text-faint">This edition</dt>
                   <dd className="mt-1 text-ink">
                     <time dateTime={work.lastPublishedAt}>{formatDate(work.lastPublishedAt)}</time>
                   </dd>
                 </div>
               ) : null}
               <div>
-                <dt className="uppercase text-faint">Length</dt>
+                <dt className="text-faint">Length</dt>
                 <dd className="mt-1 text-ink">
                   {formatWords(work.wordCount)} · {formatMinutes(work.readingMinutes)}
                 </dd>
@@ -87,7 +87,7 @@ export async function PublicationView({ collection, params }: { collection: Coll
             ) : null}
 
             <section aria-labelledby="contents" className="mt-16">
-              <h2 id="contents" className="meta uppercase">
+              <h2 id="contents" className="meta">
                 Contents · {chapterLabel(toc.length)}
               </h2>
               <ol className="mt-4 divide-y divide-rule border-t border-rule">

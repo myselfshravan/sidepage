@@ -117,54 +117,65 @@ export function SignInForm() {
     });
 
   return (
-    <div className="mt-10 space-y-8">
+    <div className="mt-10 space-y-6">
       <button
         type="button"
         disabled={working}
         onClick={google}
-        className="flex min-h-12 w-full items-center justify-center border border-ink px-5 transition-colors hover:bg-ink hover:text-paper disabled:opacity-50"
+        className="btn btn-quiet w-full"
       >
+        <svg aria-hidden viewBox="0 0 48 48" className="size-5">
+          <path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.8-2.1 5.1-4.4 6.7v5.6h7.1c4.2-3.8 6.6-9.5 6.6-16.3z" />
+          <path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-7.1-5.6c-2 1.3-4.5 2.1-7.4 2.1-5.7 0-10.6-3.8-12.3-9.1H4.3v5.7C7.9 41.1 15.4 46 24 46z" />
+          <path fill="#FBBC05" d="M11.7 28.1c-.4-1.3-.7-2.7-.7-4.1s.3-2.8.7-4.1v-5.7H4.3C2.8 17.2 2 20.5 2 24s.8 6.8 2.3 9.8l7.4-5.7z" />
+          <path fill="#EA4335" d="M24 10.8c3.2 0 6.1 1.1 8.4 3.3l6.3-6.3C34.9 4.2 29.9 2 24 2 15.4 2 7.9 6.9 4.3 14.2l7.4 5.7c1.7-5.3 6.6-9.1 12.3-9.1z" />
+        </svg>
         Continue with Google
       </button>
+      <p className="flex items-center gap-4 text-muted" aria-hidden>
+        <span className="h-px flex-1 bg-rule" />
+        or with email
+        <span className="h-px flex-1 bg-rule" />
+      </p>
 
       <form
         method="post"
         action="/sign-in"
-        className="space-y-3 border-t border-rule pt-8"
+        className="space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
           void submit(new FormData(e.currentTarget));
         }}
       >
-        <p className="meta uppercase">{mode === "sign-up" ? "Create an account" : mode === "reset" ? "Reset your password" : "Sign in with email"}</p>
+        {mode !== "sign-in" ? <h2 className="font-display text-xl">{mode === "sign-up" ? "Create an account" : "Reset your password"}</h2> : null}
         {mode === "sign-up" ? (
           <label className="block">
-            <span className="meta">Name</span>
-            <input name="name" required maxLength={80} autoComplete="name" className="mt-1 block min-h-11 w-full border border-rule bg-surface px-3" />
+            <span className="field-label">Name</span>
+            <input name="name" required maxLength={80} autoComplete="name" className="field" />
           </label>
         ) : null}
         <label className="block">
-          <span className="meta">Email</span>
-          <input name="email" type="email" required autoComplete="email" className="mt-1 block min-h-11 w-full border border-rule bg-surface px-3" />
+          <span className="field-label">Email</span>
+          <input name="email" type="email" required autoComplete="email" className="field" />
         </label>
         {mode !== "reset" ? (
           <label className="block">
-            <span className="meta">Password</span>
+            <span className="field-label">Password</span>
             <input
               name="password"
               type="password"
               required
               minLength={mode === "sign-up" ? 10 : undefined}
               autoComplete={mode === "sign-up" ? "new-password" : "current-password"}
-              className="mt-1 block min-h-11 w-full border border-rule bg-surface px-3"
+              className="field"
             />
-            {mode === "sign-up" ? <span className="meta mt-1 block">At least 10 characters.</span> : null}
+            {mode === "sign-up" ? <span className="field-hint">At least 10 characters.</span> : null}
           </label>
         ) : null}
-        <button type="submit" disabled={working} className="min-h-11 w-full bg-ink px-5 text-paper disabled:opacity-50">
+        <button type="submit" disabled={working} className="btn btn-primary w-full">
           {state.kind === "working" ? "Working…" : mode === "sign-up" ? "Create account" : mode === "reset" ? "Send reset link" : "Sign in"}
         </button>
-        <div className="meta flex flex-wrap justify-between gap-2 pt-1">
+        <div className="flex flex-wrap justify-between gap-2 text-[0.9375rem]">
           {mode === "sign-in" ? (
             <>
               <button type="button" className="link-quiet" onClick={() => setMode("sign-up")}>

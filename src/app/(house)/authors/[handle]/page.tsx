@@ -33,13 +33,13 @@ async function Author({ params }: { params: Promise<{ handle: string }> }) {
   const works = await listPublicWorksByAuthor(author.uid);
   return (
     <main id="main" className="mx-auto w-full max-w-5xl flex-1 px-5 py-20 sm:px-8">
-      <p className="meta uppercase">Author · @{author.handle}</p>
+      <p className="meta">Author · @{author.handle}</p>
       <div className="mt-4 flex flex-wrap items-end justify-between gap-6">
         <h1 className="font-display text-[clamp(2.6rem,7vw,4.5rem)] leading-none italic">{author.displayName}</h1>
         <FollowButton authorUid={author.uid} />
       </div>
       {author.bio ? <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted">{author.bio}</p> : null}
-      <h2 className="meta mt-16 border-b border-rule pb-3 uppercase">Published work</h2>
+      <h2 className="meta mt-16 border-b border-rule pb-3">Published work</h2>
       {works.length === 0 ? (
         <p className="mt-8 text-muted italic">Nothing published yet.</p>
       ) : (

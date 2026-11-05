@@ -41,25 +41,26 @@
   --radius: 2px;
 }
 
+/* Book paper, set in the blue-black of fountain-pen ink. */
 [data-theme="house"],
 [data-theme="memoir"] {
-  --bg: #f6f1e7;
-  --surface: #fbf8f1;
-  --surface-raised: #fffdf8;
-  --ink: #2b2620;
-  --ink-muted: #6b6257;
-  --ink-faint: #8f8576;
-  --rule: #d9cfbf;
-  --accent: #8a5a3b;
-  --accent-text: #7c4f32;
-  --on-accent: #fbf8f1;
-  --focus: #8a5a3b;
+  --bg: #f4f0e8;
+  --surface: #faf7f1;
+  --surface-raised: #fffdf9;
+  --ink: #1f1d1a;
+  --ink-muted: #605a50;
+  --ink-faint: #857d70;
+  --rule: #dcd5c8;
+  --accent: #24345e;
+  --accent-text: #24345e;
+  --on-accent: #faf7f1;
+  --focus: #24345e;
   --danger: #a1282e;
   --success: #2f6b3f;
   --warning: #8a6100;
   --theme-display: var(--font-newsreader), Georgia, serif;
   --theme-body: var(--font-newsreader), Georgia, serif;
-  --theme-meta: var(--font-plex-mono), ui-monospace, monospace;
+  --theme-meta: var(--font-newsreader), Georgia, serif;
   color-scheme: light;
 }
 
@@ -81,7 +82,7 @@
   --signal: #b5444b;
   --theme-display: var(--font-bodoni), "Didot", serif;
   --theme-body: var(--font-crimson), Georgia, serif;
-  --theme-meta: var(--font-plex-mono), ui-monospace, monospace;
+  --theme-meta: var(--font-crimson), Georgia, serif;
   color-scheme: dark;
 }
 
@@ -109,16 +110,16 @@
 
 /* Reader light/dark override, chosen by the reader (set before paint). */
 html[data-reader-mode="dark"] [data-theme="memoir"] [data-reader] {
-  --bg: #1e1b17;
-  --surface: #26221d;
-  --surface-raised: #2e2923;
-  --ink: #e8e0d2;
-  --ink-muted: #a79c8b;
-  --ink-faint: #857b6c;
-  --rule: #3a342c;
-  --accent: #c99a73;
-  --accent-text: #d4ac88;
-  --focus: #d4ac88;
+  --bg: #1b1c20;
+  --surface: #222328;
+  --surface-raised: #2a2b31;
+  --ink: #e6e1d7;
+  --ink-muted: #a39e94;
+  --ink-faint: #827d74;
+  --rule: #36373d;
+  --accent: #9fb0d8;
+  --accent-text: #aebde0;
+  --focus: #aebde0;
   color-scheme: dark;
 }
 html[data-reader-mode="light"] [data-theme="fiction"] [data-reader] {
@@ -178,12 +179,89 @@ html[data-reader-mode="light"] [data-theme="fiction"] [data-reader] {
     top: 1rem;
   }
 
-  /* Small archival caption: dates, word counts, metadata. */
+  /* Small supporting text: dates, lengths, bylines. Quiet, in the body face. */
   .meta {
     font-family: var(--theme-meta);
-    font-size: 0.75rem;
-    letter-spacing: 0.04em;
+    font-size: 0.9375rem;
+    font-style: italic;
+    line-height: 1.5;
     color: var(--ink-muted);
+  }
+
+  /* Form controls on the reading side of the site (the studio has its own). */
+  .field-label {
+    display: block;
+    font-size: 0.9375rem;
+    color: var(--ink);
+    margin-bottom: 0.375rem;
+  }
+  .field-hint {
+    display: block;
+    font-size: 0.875rem;
+    font-style: italic;
+    color: var(--ink-muted);
+    margin-top: 0.375rem;
+  }
+  .field {
+    display: block;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.55rem 0.8rem;
+    font: inherit;
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--surface-raised);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    transition: border-color 150ms var(--ease-page);
+  }
+  .field:hover {
+    border-color: var(--ink-faint);
+  }
+  .field:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+    border-color: var(--focus);
+  }
+  textarea.field {
+    line-height: 1.5;
+    resize: vertical;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0 1.25rem;
+    font: inherit;
+    font-size: 1rem;
+    border-radius: 4px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition:
+      background-color 150ms var(--ease-page),
+      color 150ms var(--ease-page),
+      border-color 150ms var(--ease-page);
+  }
+  .btn:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: var(--on-accent);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--accent) 86%, black);
+  }
+  .btn-quiet {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--rule);
+  }
+  .btn-quiet:hover:not(:disabled) {
+    border-color: var(--ink);
   }
 
   .link-quiet {

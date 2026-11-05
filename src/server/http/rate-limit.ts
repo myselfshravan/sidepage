@@ -8,8 +8,11 @@ import { db } from "../firebase/admin";
 
 export type Limit = { name: string; max: number; windowSeconds: number };
 
+/** Sign-ins per IP per minute. Configurable because offices and campuses share an IP. */
+const sessionMax = Number(process.env.SESSION_RATE_LIMIT_PER_MIN ?? "") || 20;
+
 export const LIMITS = {
-  session: { name: "session", max: 10, windowSeconds: 60 },
+  session: { name: "session", max: sessionMax, windowSeconds: 60 },
   save: { name: "save", max: 120, windowSeconds: 60 },
   publish: { name: "publish", max: 20, windowSeconds: 60 },
   write: { name: "write", max: 60, windowSeconds: 60 },

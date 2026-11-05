@@ -182,7 +182,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
     return () => clearTimeout(t);
   }, [notice]);
 
-  const toolbarButton = "min-h-11 min-w-11 items-center justify-center px-2 sm:px-3 meta uppercase hover:text-ink aria-expanded:text-ink";
+  const toolbarButton = "min-h-11 min-w-11 items-center justify-center px-2 sm:px-3 text-[0.9375rem] text-muted hover:text-ink aria-expanded:text-ink";
 
   return (
     <div data-reader className="relative min-h-screen">
@@ -202,7 +202,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
         className={`no-print sticky top-0 z-30 border-b border-rule bg-paper/95 backdrop-blur-sm transition-transform duration-200 ease-page ${chromeHidden && !panel ? "-translate-y-full" : ""}`}
       >
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-3 sm:px-6">
-          <Link href={base} className="meta min-w-0 truncate py-3 uppercase hover:text-ink" aria-label={`Back to ${workTitle}`}>
+          <Link href={base} className="min-w-0 truncate py-3 text-[0.9375rem] text-muted hover:text-ink" aria-label={`Back to ${workTitle}`}>
             ← <span className="hidden sm:inline">{workTitle}</span>
           </Link>
           <div className="flex items-center">
@@ -225,7 +225,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
           <section id="reader-settings" aria-label="Reading settings" className="border-t border-rule bg-surface">
             <div className="mx-auto grid max-w-5xl gap-5 px-5 py-5 sm:grid-cols-4 sm:px-6">
               <fieldset>
-                <legend className="meta uppercase">Size</legend>
+                <legend className="meta">Size</legend>
                 <div className="mt-2 flex items-center gap-2">
                   <button type="button" className="min-h-11 min-w-11 border border-rule" aria-label="Smaller text" disabled={prefs.size <= 1} onClick={() => update({ size: (prefs.size - 1) as ReaderPrefs["size"] })}>
                     A−
@@ -263,7 +263,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
                   </li>
                 ))}
               </ol>
-              <h2 className="meta mt-6 uppercase">Bookmarks</h2>
+              <h2 className="meta mt-6">Bookmarks</h2>
               {bookmarks.length === 0 ? (
                 <p className="mt-2 text-sm text-muted italic">No bookmarks yet. Use Bookmark to mark your place.</p>
               ) : (
@@ -274,7 +274,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
                         <span className="meta block">{b.title}</span>
                         {b.excerpt}…
                       </Link>
-                      <button type="button" className="meta min-h-11 px-2 uppercase hover:text-danger" onClick={() => void removeBookmark(b)} aria-label={`Remove bookmark in ${b.title}`}>
+                      <button type="button" className="meta min-h-11 px-2 hover:text-danger" onClick={() => void removeBookmark(b)} aria-label={`Remove bookmark in ${b.title}`}>
                         Remove
                       </button>
                     </li>
@@ -298,7 +298,7 @@ export function ReaderShell({ workId, base, workTitle, chapter, toc, children }:
 function Choice<T extends string>({ legend, value, options, onChange }: { legend: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
   return (
     <fieldset>
-      <legend className="meta uppercase">{legend}</legend>
+      <legend className="meta">{legend}</legend>
       <div className="mt-2 flex flex-wrap gap-2">
         {options.map(([v, label]) => (
           <label key={v} className="meta inline-flex min-h-11 cursor-pointer items-center border border-rule px-3 has-[:checked]:border-ink has-[:checked]:text-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-[var(--focus)]">

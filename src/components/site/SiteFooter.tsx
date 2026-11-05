@@ -11,15 +11,12 @@ export function SiteFooter() {
             {site.tagline}
           </p>
         </div>
-        <nav aria-label="Footer" className="meta flex flex-wrap items-end gap-x-6 gap-y-2 uppercase">
+        <nav aria-label="Footer" className="meta flex flex-wrap items-end gap-x-6 gap-y-2">
           <Link href="/contact" className="hover:text-ink">
             Contact
           </Link>
           <Link href="/archive" className="hover:text-ink">
             Archive
-          </Link>
-          <Link href="/studio" prefetch={false} className="hover:text-ink">
-            Studio
           </Link>
           <span>
             © {site.established} {site.name}

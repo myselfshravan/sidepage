@@ -23,7 +23,7 @@ export function ContentWarningGate({ workId, warnings, backHref, children }: { w
       </noscript>
       {state === "gate" ? (
         <section data-cw-gate aria-labelledby="cw-title" className="mx-auto max-w-xl px-5 py-24 text-center">
-          <p className="meta uppercase">Before you begin</p>
+          <p className="meta">Before you begin</p>
           <h2 id="cw-title" className="credits mt-4 text-2xl">
             Content warnings
           </h2>
@@ -36,7 +36,7 @@ export function ContentWarningGate({ workId, warnings, backHref, children }: { w
             <button type="button" onClick={proceed} autoFocus className="min-h-11 bg-accent px-6 text-on-accent">
               Continue to the chapter
             </button>
-            <Link href={backHref} className="meta inline-flex min-h-11 items-center px-4 uppercase link-quiet">
+            <Link href={backHref} className="meta inline-flex min-h-11 items-center px-4 link-quiet">
               Back to contents
             </Link>
           </div>

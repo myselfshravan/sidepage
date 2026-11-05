@@ -1,32 +1,23 @@
 import Link from "next/link";
-import { canWrite } from "@/domain/access/policy";
+import { canAdminister, canWrite } from "@/domain/access/policy";
 import { getViewer } from "@/server/auth/session";
+import { AccountMenu } from "./AccountMenu";
 import { AnalyticsIdentity } from "./AnalyticsIdentity";
 
-/** Account links in the header. Reads the session, so it streams in behind the static shell. */
+/** The header's account control. Reads the session, so it streams in behind the static shell. */
 export async function AccountNav() {
   const viewer = await getViewer();
   if (!viewer) {
     return (
-      <Link href="/sign-in" prefetch={false} className="py-2 hover:text-ink">
+      <Link href="/sign-in" prefetch={false} className="btn btn-quiet h-10 min-h-0 px-4 text-[0.9375rem]">
         Sign in
       </Link>
     );
   }
   return (
-    <span className="flex gap-x-6">
+    <>
       <AnalyticsIdentity uid={viewer.uid} role={viewer.role} />
-      <Link href="/library" prefetch={false} className="py-2 hover:text-ink">
-        Library
-      </Link>
-      {canWrite(viewer) ? (
-        <Link href="/studio" prefetch={false} className="py-2 hover:text-ink">
-          Studio
-        </Link>
-      ) : null}
-      <Link href="/account" prefetch={false} className="py-2 hover:text-ink">
-        {viewer.displayName.split(" ")[0]}
-      </Link>
-    </span>
+      <AccountMenu name={viewer.displayName} handle={viewer.handle} canWrite={canWrite(viewer)} isAdmin={canAdminister(viewer)} />
+    </>
   );
 }

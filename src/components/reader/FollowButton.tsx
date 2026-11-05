@@ -27,7 +27,7 @@ export function FollowButton({ authorUid }: { authorUid: string }) {
   if (state.status === "loading" || state.status === "self") return null;
   if (state.status === "anonymous") {
     return (
-      <Link href={`/sign-in?next=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`} className="meta inline-flex min-h-11 items-center border border-ink px-5 uppercase">
+      <Link href={`/sign-in?next=${encodeURIComponent(typeof window === "undefined" ? "/" : window.location.pathname)}`} className="meta inline-flex min-h-11 items-center border border-ink px-5">
         Sign in to follow
       </Link>
     );
@@ -47,7 +47,7 @@ export function FollowButton({ authorUid }: { authorUid: string }) {
         }
         setBusy(false);
       }}
-      className="meta inline-flex min-h-11 items-center border border-ink px-5 uppercase aria-pressed:bg-ink aria-pressed:text-paper disabled:opacity-50"
+      className="meta inline-flex min-h-11 items-center border border-ink px-5 aria-pressed:bg-ink aria-pressed:text-paper disabled:opacity-50"
     >
       {following ? "Following" : "Follow"}
     </button>

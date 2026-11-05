@@ -5,15 +5,13 @@ import { chapterLabel, formatDate, formatMinutes } from "@/lib/format";
 import { listPublicWorks } from "@/server/read/public";
 import { Cover } from "./Cover";
 
-const COPY: Record<Collection, { eyebrow: string; title: string; intro: string; empty: string }> = {
+const COPY: Record<Collection, { title: string; intro: string; empty: string }> = {
   memoirs: {
-    eyebrow: "The memoir collection",
     title: "Memoirs",
     intro: "Real lives, written down: essays, recollections and reflections.",
     empty: "No memoirs published yet.",
   },
   fiction: {
-    eyebrow: "The fiction collection",
     title: "Fiction",
     intro: "Invented lives, released chapter by chapter. Content warnings are always shown before you begin.",
     empty: "No fiction has been released yet.",
@@ -28,8 +26,7 @@ export async function CollectionIndex({ collection }: { collection: Collection }
       <SiteHeader current={`/${collection}`} />
       <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-16 sm:px-8 sm:py-24">
         <header className="max-w-3xl">
-          <p className="meta uppercase">{copy.eyebrow}</p>
-          <h1 className={collection === "fiction" ? "credits mt-5 text-[clamp(2.5rem,7vw,5rem)] leading-none" : "mt-5 font-display text-[clamp(3rem,8vw,5.5rem)] leading-none italic"}>
+          <h1 className={collection === "fiction" ? "credits text-[clamp(2.5rem,7vw,5rem)] leading-none" : "font-display text-[clamp(3rem,8vw,5.5rem)] leading-none italic"}>
             {copy.title}
           </h1>
           <p className="mt-6 text-lg leading-relaxed text-muted">{copy.intro}</p>

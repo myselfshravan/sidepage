@@ -19,8 +19,7 @@ export default async function ArchivePage() {
     <>
       <SiteHeader current="/archive" />
       <main id="main" className="mx-auto w-full max-w-4xl flex-1 px-5 py-20 sm:px-8">
-        <p className="meta uppercase">The archive</p>
-        <h1 className="mt-4 font-display text-5xl italic">Everything, by year of publication</h1>
+        <h1 className="font-display text-5xl italic">Everything, by year of publication</h1>
         {works.length === 0 ? (
           <p className="mt-12 text-muted italic">Nothing has been published yet.</p>
         ) : (

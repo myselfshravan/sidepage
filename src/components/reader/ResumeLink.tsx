@@ -20,7 +20,7 @@ export function ResumeLink({ workId, base }: { workId: string; base: string }) {
   return (
     <>
       {saved && saved.fraction < 0.98 ? (
-        <Link href={`${base}/${saved.chapter}#resume`} className="meta inline-flex min-h-11 items-center uppercase link-quiet">
+        <Link href={`${base}/${saved.chapter}#resume`} className="meta inline-flex min-h-11 items-center link-quiet">
           Continue “{saved.title}” · {Math.round(saved.fraction * 100)}%
         </Link>
       ) : null}
@@ -29,7 +29,7 @@ export function ResumeLink({ workId, base }: { workId: string; base: string }) {
           type="button"
           disabled={busy}
           aria-pressed={state.saved}
-          className="meta inline-flex min-h-11 items-center uppercase link-quiet disabled:opacity-50"
+          className="meta inline-flex min-h-11 items-center link-quiet disabled:opacity-50"
           onClick={async () => {
             setBusy(true);
             const r = await readerOp({ op: "save", workId, saved: !state.saved });

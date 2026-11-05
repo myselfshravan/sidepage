@@ -10,9 +10,8 @@ export default function SignInPage() {
     <>
       <SiteHeader />
       <main id="main" className="mx-auto w-full max-w-md flex-1 px-5 py-24 sm:px-8">
-        <p className="meta uppercase">Your account</p>
-        <h1 className="mt-4 font-display text-4xl italic">Sign in</h1>
-        <p className="mt-4 text-muted">Sign in to keep your place across devices, build a library and follow authors. Writers sign in here too.</p>
+        <h1 className="font-display text-4xl">Sign in to sidepage</h1>
+        <p className="mt-3 leading-relaxed text-muted">Keep your place across devices, save books to your library and follow authors. Writers sign in here too.</p>
         <Suspense>
           <SignInForm />
         </Suspense>

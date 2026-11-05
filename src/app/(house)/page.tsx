@@ -17,7 +17,7 @@ export default async function HomePage() {
         <section className="mx-auto max-w-6xl px-5 pt-20 pb-20 sm:px-8 sm:pt-28">
           <h1 className="font-display text-[clamp(3.5rem,11vw,9rem)] leading-[0.9] font-normal tracking-[-0.03em] italic">{site.name}</h1>
           <p className="mt-8 max-w-xl text-xl leading-relaxed text-muted">{site.tagline}</p>
-          <div className="meta mt-10 flex flex-wrap gap-x-8 gap-y-3 uppercase">
+          <div className="meta mt-10 flex flex-wrap gap-x-8 gap-y-3">
             <Link href="/memoirs" className="link-quiet">
               Read memoirs
             </Link>
@@ -35,7 +35,7 @@ export default async function HomePage() {
             <h2 id="memoirs-heading" className="font-display text-3xl italic">
               Memoirs
             </h2>
-            <Link href="/memoirs" className="meta uppercase link-quiet">
+            <Link href="/memoirs" className="meta link-quiet">
               All memoirs
             </Link>
           </div>
@@ -71,7 +71,7 @@ export default async function HomePage() {
               <h2 id="fiction-heading" className="credits text-sm text-muted">
                 Fiction
               </h2>
-              <Link href="/fiction" className="meta uppercase link-quiet">
+              <Link href="/fiction" className="meta link-quiet">
                 All fiction
               </Link>
             </div>
@@ -83,7 +83,7 @@ export default async function HomePage() {
                   <Cover collection="fiction" title={lead.title} subtitle={lead.subtitle} author={lead.authorName} size="lg" />
                 </Link>
                 <div className="space-y-6">
-                  <p className="meta uppercase">
+                  <p className="meta">
                     Latest · {lead.chapterCount} {lead.chapterCount === 1 ? "chapter" : "chapters"}
                   </p>
                   <h3 className="credits text-[clamp(2rem,5vw,4rem)] leading-[1.05]">
@@ -118,7 +118,7 @@ export default async function HomePage() {
 
         {authors.length > 0 ? (
           <section aria-labelledby="authors-heading" className="mx-auto max-w-6xl px-5 py-20 sm:px-8">
-            <h2 id="authors-heading" className="meta border-b border-rule pb-3 uppercase">
+            <h2 id="authors-heading" className="meta border-b border-rule pb-3">
               Authors
             </h2>
             <ul className="mt-6 flex flex-wrap gap-x-8 gap-y-3">

@@ -21,13 +21,13 @@ test("a new reader signs up, verifies, asks to write, and is approved by an admi
 
   await verifyEmail(email);
   await signInAs(page, email, /\/library$/);
-  await expect(page.getByRole("heading", { name: "Reading" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your library" })).toBeVisible();
 
   // Readers can't write yet; they can ask.
   await page.goto("/account");
-  await page.getByLabel("Want to publish here? Tell us what you write.").fill("Short memoir essays about growing up by the sea.");
+  await page.getByLabel("Want to publish here? Tell the editors what you write.").fill("Short memoir essays about growing up by the sea.");
   await page.getByRole("button", { name: "Request to write" }).click();
-  await expect(page.getByText(/waiting for review/)).toBeVisible();
+  await expect(page.getByText(/with the editors/)).toBeVisible();
 
   // An admin approves.
   const admin = await (await browser.newContext()).newPage();

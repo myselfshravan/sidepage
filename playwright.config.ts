@@ -30,6 +30,8 @@ export default defineConfig({
   ],
   webServer: {
     command: `pnpm start --port ${PORT}`,
+    // Every test signs in from the same IP.
+    env: { SESSION_RATE_LIMIT_PER_MIN: "1000" },
     url: `http://localhost:${PORT}`,
     reuseExistingServer: false,
     timeout: 60_000,

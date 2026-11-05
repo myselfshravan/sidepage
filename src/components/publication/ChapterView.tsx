@@ -21,7 +21,7 @@ export async function ChapterView({ collection, params }: { collection: Collecti
   const article = (
     <article className="px-5 pt-14 pb-24 sm:px-8 sm:pt-24" lang="en">
       <header className="mx-auto mb-14 max-w-[var(--measure)] text-center">
-        <p className="meta uppercase">
+        <p className="meta">
           {fiction ? `Chapter ${chapter.ordinal}` : romanize(chapter.ordinal)} · {formatMinutes(minutes)}
         </p>
         <h1 className={fiction ? "credits mt-5 text-[clamp(1.8rem,5vw,3rem)] leading-tight" : "mt-5 font-display text-[clamp(2.2rem,5vw,3.4rem)] leading-tight italic"}>
@@ -37,23 +37,23 @@ export async function ChapterView({ collection, params }: { collection: Collecti
       <nav aria-label="Chapters" className="no-print mx-auto mt-20 grid max-w-[var(--measure)] gap-4 border-t border-rule pt-8 sm:grid-cols-2">
         {prev ? (
           <Link href={`${base}/${prev.slug}`} className="group">
-            <span className="meta block uppercase">Previous</span>
+            <span className="meta block">Previous</span>
             <span className="group-hover:text-accent-ink">{prev.title}</span>
           </Link>
         ) : (
           <Link href={base} className="group">
-            <span className="meta block uppercase">Back to</span>
+            <span className="meta block">Back to</span>
             <span className="group-hover:text-accent-ink">Contents</span>
           </Link>
         )}
         {next ? (
           <Link href={`${base}/${next.slug}`} className="group sm:text-right">
-            <span className="meta block uppercase">Next</span>
+            <span className="meta block">Next</span>
             <span className="group-hover:text-accent-ink">{next.title}</span>
           </Link>
         ) : (
           <p className="sm:text-right">
-            <span className="meta block uppercase">The end</span>
+            <span className="meta block">The end</span>
             <span className="text-muted">{formatWords(work.wordCount)} read</span>
           </p>
         )}
