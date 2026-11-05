@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "demo-sidepage",
+    "dev": "sidepage-c4daa"
+  }
+}

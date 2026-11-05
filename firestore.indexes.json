@@ -1,0 +1,70 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "published",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "listed", "order": "ASCENDING" },
+        { "fieldPath": "collection", "order": "ASCENDING" },
+        { "fieldPath": "sort_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "published",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "listed", "order": "ASCENDING" },
+        { "fieldPath": "sort_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "works",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "scheduled_for", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "works",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "last_edited_at", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "editions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "work_id", "order": "ASCENDING" },
+        { "fieldPath": "number", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "editions",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "state", "order": "ASCENDING" },
+        { "fieldPath": "claimed_at", "order": "ASCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "chapters",
+      "fieldPath": "doc",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "revisions",
+      "fieldPath": "doc",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "parts",
+      "fieldPath": "doc",
+      "indexes": []
+    }
+  ]
+}
