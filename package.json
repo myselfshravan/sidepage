@@ -16,7 +16,8 @@
     "seed": "tsx --conditions=react-server scripts/seed.ts",
     "grant-author": "tsx --conditions=react-server scripts/grant-author.ts",
     "check:secrets": "bash scripts/check-secrets.sh",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:secrets"
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm check:secrets",
+    "check:credentials": "tsx --conditions=react-server scripts/check-credentials.ts"
   },
   "dependencies": {
     "@google-cloud/firestore": "^9.4.0",

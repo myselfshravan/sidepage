@@ -25,6 +25,8 @@ type Clients = { app: App; auth: Auth; db: Firestore };
 
 const globalForFirebase = globalThis as unknown as { __sidepageFirebase?: Clients };
 
+// The external-account config is built from our own server env vars, never from
+// request input, so the library's "untrusted credential config" warning does not apply.
 function federatedClient(): AuthClient | null {
   const env = serverEnv();
   if (!env.GCP_WORKLOAD_IDENTITY_AUDIENCE || !env.GCP_SERVICE_ACCOUNT_EMAIL) return null;
