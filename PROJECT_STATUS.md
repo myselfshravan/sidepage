@@ -40,10 +40,10 @@ Each item was checked by the named tests, or in a real browser (Chromium via Pla
 | Credentials | Workload Identity pool `vercel` → service account `sidepage-app` (roles: `datastore.user`, `firebaseauth.admin`, `serviceusage.serviceUsageConsumer`). No keys exist. Verified: STS exchange, impersonation, Firestore and Auth reads (`pnpm check:credentials`), and the production runtime. |
 | Production checks | Public pages 200 and CDN-cached; security headers present; `/studio` redirects; forged cookie gets no data; cross-site session POST 403; bad token 401; cron without secret 401. |
 | Auth providers | Google, plus email/password with verification, enabled on `sidepage-c4daa`. |
-| PostHog | Shares the existing PostHog project; every event is tagged `app: sidepage` (D18). |
+| PostHog | Shares the existing PostHog project; every event is tagged `app: sidepage` (D18). Dashboard: https://us.posthog.com/project/78153/dashboard/2312169 (daily traffic, top pages; product-event tiles to add once those events arrive). |
 | Admin | shravanrevanna@gmail.com is admin on `sidepage-c4daa`. |
 | Agents | Create a token at /studio/admin, then register the MCP server (docs/AGENTS.md). |
-| Still open | Invite-by-account and gift invitations; a PostHog dashboard once events flow; separate `sidepage-prod` project, domain, backups (Phase 9). |
+| Still open | Invite-by-account and gift invitations; product-event tiles on the PostHog dashboard once events arrive; separate `sidepage-prod` project, domain, backups (Phase 9). |
 
 ## Known limitations
 
