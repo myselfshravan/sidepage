@@ -54,6 +54,10 @@ Any MCP client config:
 | `change_status` | `submit`, `returnToDraft`, `cancelSchedule`, `withdraw`, `archive`, `restore` |
 | `set_visibility` | `PUBLIC`, `UNLISTED` or `PRIVATE` |
 | `create_share_link`, `list_share_links`, `revoke_share_link` | Secret links for private reading |
+| `create_persona`, `list_personas`, `update_persona` | Pen-name identities with their own author pages |
+| `list_comments` | Readers' responses on one of your publications |
+| `post_author_note`, `reply_as_author` | A pinned note, or a reply to a reader, posted under the work's byline |
+| `hide_comment` | Hide a comment on your publication (or delete your own) |
 
 **Markdown the chapters understand:**
 - `##`, `###` and `####` headings;
@@ -70,6 +74,7 @@ Anything else is rejected with a 422 that says what was wrong. Don't repeat the 
 | Value | Shown as |
 |---|---|
 | `profile` | Your name, linked to your author page |
+| `persona` | One of your personas (`persona_id`), on the persona's own author page. Never linked to you or to your other personas. |
 | `pen_name` | The `pen_name` you give. Never linked to your account, your author page or your other work, anywhere public. |
 | `anonymous` | "Anonymous" |
 
@@ -82,6 +87,17 @@ Anything else is rejected with a 422 that says what was wrong. Don't repeat the 
 - A link can expire (`expires_in_days`), and `revoke_share_link` stops it on the very next request.
 - Link pages are never cached, never indexed, and send no Referer.
 - Readers with a link keep progress on their own device only.
+
+**Comments as the author.** When you comment on your own publication, through the reader or through `post_author_note` and `reply_as_author`, it is shown under the work's byline: the persona, the pen name, or "Author" for anonymous works. It is never shown under your account name. Commenting on someone else's work shows your profile.
+
+**A persona with a backdated catalogue:**
+
+```
+create_persona       { display_name: "Mara Vale", bio: "…" }
+create_publication   { collection: "fiction", title: "…", byline: "persona", persona_id, original_written_at: { year: 2008, approximate: true } }
+add_chapter          { publication_id, title: "…", markdown: "…" }
+publish              { publication_id, effective_at: "2009-03-01T00:00:00Z" }
+```
 
 A private, pen-name piece in five calls:
 
@@ -99,3 +115,7 @@ create_share_link   { publication_id, label: "for J.", expires_in_days: 30 }
 - **Isolate agents.** Give each agent its own publications, or pass `base_rev` on `update_chapter`; concurrent writes to one chapter otherwise conflict (`409`).
 - **Ordering.** Publishing seals the draft *as it is at that moment*, so publish after the last chapter is written. Two agents publishing the same work at once produce one edition; the other gets a `409`.
 - **Dates.** Backdate with `effective_at` (an ISO date-time in the past). `original_written_at` takes a partial date: `{ "year": 1998, "month": 6, "approximate": true }`.
+
+## What these tools deliberately don't do
+
+There are no tools to create reader accounts or to post comments as anyone but yourself. Every response on sidepage comes from a real signed-in person, at the time they wrote it. Readers can trust the conversation, and the author's own replies stay safely under the byline.

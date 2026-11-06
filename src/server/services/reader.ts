@@ -3,7 +3,7 @@ import { FieldPath, Timestamp } from "@google-cloud/firestore";
 import { z } from "zod";
 import { AppError } from "../errors";
 import { db } from "../firebase/admin";
-import { col, type PublishedDoc, type UserDoc } from "../firebase/model";
+import { col, type PersonaDoc, type PublishedDoc, type UserDoc } from "../firebase/model";
 import type { Actor } from "./actor";
 import { parseInput } from "./works";
 
@@ -118,11 +118,17 @@ export async function setSaved(actor: Actor, id: unknown, saved: boolean, now = 
 
 export async function setFollowing(actor: Actor, authorUid: unknown, following: boolean, now = new Date()): Promise<void> {
   const uid = user(actor);
-  const target = parseInput(z.string().min(1).max(128).regex(/^[A-Za-z0-9_-]+$/), authorUid);
+  // Either an account uid or "persona:<id>".
+  const target = parseInput(z.string().min(1).max(140).regex(/^(persona:)?[A-Za-z0-9_-]+$/), authorUid);
   if (!following) return void (await sub(uid, "following").doc(target).delete());
   if (target === uid) throw new AppError("INVALID", "You can't follow yourself.");
-  const author = (await col.user(target).get()).data() as UserDoc | undefined;
-  if (!author || author.role === "reader") throw new AppError("NOT_FOUND", "That author doesn't exist.");
+  if (target.startsWith("persona:")) {
+    const persona = (await col.persona(target.slice(8)).get()).data() as PersonaDoc | undefined;
+    if (!persona) throw new AppError("NOT_FOUND", "That author doesn't exist.");
+  } else {
+    const author = (await col.user(target).get()).data() as UserDoc | undefined;
+    if (!author || author.role === "reader") throw new AppError("NOT_FOUND", "That author doesn't exist.");
+  }
   const count = await sub(uid, "following").count().get();
   if (count.data().count >= MAX_FOLLOWING) throw new AppError("INVALID", "You follow the maximum number of authors.");
   await sub(uid, "following").doc(target).set({ author_uid: target, followed_at: Timestamp.fromDate(now) });
@@ -171,18 +177,30 @@ export async function libraryView(actor: Actor): Promise<LibraryView> {
     progress: progressById.get(id) ?? null,
   });
 
-  const followedUids = followingSnap.docs.map((d) => d.id);
-  const [fromFollowedSnap, followedProfiles] = await Promise.all([
+  const followedUids = followingSnap.docs.map((d) => d.id).filter((id) => !id.startsWith("persona:"));
+  const followedPersonas = followingSnap.docs.map((d) => d.id).filter((id) => id.startsWith("persona:")).map((id) => id.slice(8));
+  const [fromAccounts, fromPersonas, followedProfiles, personaProfiles] = await Promise.all([
     followedUids.length
       ? col.published().where("listed", "==", true).where("public_author_uid", "in", followedUids).orderBy("sort_at", "desc").limit(20).get()
       : null,
+    followedPersonas.length
+      ? col.published().where("listed", "==", true).where("public_persona_id", "in", followedPersonas).orderBy("sort_at", "desc").limit(20).get()
+      : null,
     followedUids.length ? col.users().where(FieldPath.documentId(), "in", followedUids).get() : null,
+    followedPersonas.length ? col.personas().where(FieldPath.documentId(), "in", followedPersonas).get() : null,
   ]);
+  const fromFollowed = [...(fromAccounts?.docs ?? []), ...(fromPersonas?.docs ?? [])]
+    .map((d) => ({ id: d.id, p: d.data() as PublishedDoc }))
+    .sort((a, b) => b.p.sort_at.toMillis() - a.p.sort_at.toMillis())
+    .slice(0, 20);
 
   return {
     reading: progressSnap.docs.flatMap((d) => (readable.has(d.id) && (progressById.get(d.id)?.fraction ?? 0) < 0.98 ? [item(d.id, readable.get(d.id)!)] : [])),
     saved: savedSnap.docs.flatMap((d) => (readable.has(d.id) ? [item(d.id, readable.get(d.id)!)] : [])),
-    fromFollowed: (fromFollowedSnap?.docs ?? []).map((d) => item(d.id, d.data() as PublishedDoc)).filter((w) => !!w),
-    following: (followedProfiles?.docs ?? []).map((d) => ({ uid: d.id, handle: d.get("handle") as string, displayName: d.get("display_name") as string })),
+    fromFollowed: fromFollowed.filter(({ p }) => p.live && p.visibility === "PUBLIC").map(({ id, p }) => item(id, p)),
+    following: [
+      ...(followedProfiles?.docs ?? []).map((d) => ({ uid: d.id, handle: d.get("handle") as string, displayName: d.get("display_name") as string })),
+      ...(personaProfiles?.docs ?? []).map((d) => ({ uid: `persona:${d.id}`, handle: d.get("handle") as string, displayName: d.get("display_name") as string })),
+    ],
   };
 }

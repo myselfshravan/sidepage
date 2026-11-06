@@ -98,6 +98,7 @@ async function snapshotDraft(workId: string, work: WorkDoc): Promise<Snapshot> {
     description: work.description,
     author_name: work.author_name,
     byline: work.byline ?? "profile",
+    persona_id: work.byline === "persona" ? (work.persona_id ?? null) : null,
     content_warnings: work.content_warnings,
     seo_title: work.seo_title,
     seo_description: work.seo_description,
@@ -231,8 +232,9 @@ async function commitSeal(
     if (work.draft_version !== snapshot.draftVersion || work.edition_count !== number - 1) {
       throw new AppError("CONFLICT", "The draft changed while publishing. Try again.");
     }
-    const credited = (work.byline ?? "profile") === "profile";
-    const owner = credited ? await tx.get(col.user(work.owner_uid)) : null;
+    // The public handle is the owner's for profile bylines and the persona's for persona bylines.
+    const byline = work.byline ?? "profile";
+    const credit = byline === "profile" ? await tx.get(col.user(work.owner_uid)) : byline === "persona" && work.persona_id ? await tx.get(col.persona(work.persona_id)) : null;
     const t = runMachine(work, command, now);
     if (!t.seal) throw new AppError("CONFLICT", "The publication changed state while publishing.");
 
@@ -250,7 +252,7 @@ async function commitSeal(
       last_published_at: effective,
       last_publish_executed_at: ts,
     });
-    writePublished(tx, workId, work, { editionId: id, first, last: effective, now: ts, snapshot, authorHandle: (owner?.get("handle") as string | undefined) ?? "" });
+    writePublished(tx, workId, work, { editionId: id, first, last: effective, now: ts, snapshot, authorHandle: (credit?.get("handle") as string | undefined) ?? "" });
     tx.create(col.events(workId).doc(), event(actor, t.event, ts, { from_status: work.status, to_status: t.next.status, edition_id: id, effective_at: effective }));
     return { status: t.next.status, editionId: id, tags: tagsFor(workId, work.slug) };
   });
@@ -267,7 +269,8 @@ function writePublished(
     work_id: workId,
     owner_uid: work.owner_uid,
     public_author_uid: m.byline === "profile" ? work.owner_uid : null,
-    author_handle: m.byline === "profile" ? p.authorHandle : "",
+    public_persona_id: m.byline === "persona" ? m.persona_id : null,
+    author_handle: m.byline === "profile" || m.byline === "persona" ? p.authorHandle : "",
     collection: m.collection,
     slug: m.slug,
     visibility: work.visibility,

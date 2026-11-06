@@ -52,7 +52,11 @@ const partialDate = z
 const metadata = {
   subtitle: z.string().max(300).optional(),
   description: z.string().max(2000).optional().describe("Shown on the publication page and in collection lists."),
-  byline: z.enum(["profile", "pen_name", "anonymous"]).optional().describe("profile = your name, linked to your author page; pen_name = the pen_name below, never linked to you; anonymous = shown as Anonymous."),
+  byline: z
+    .enum(["profile", "persona", "pen_name", "anonymous"])
+    .optional()
+    .describe("profile = your own name, linked to your author page; persona = one of your personas (persona_id), with its own author page, never linked to you; pen_name = a one-off name; anonymous = shown as Anonymous."),
+  persona_id: z.string().optional().describe("Required when byline is persona (from create_persona or list_personas)."),
   pen_name: z.string().max(120).optional().describe("Required when byline is pen_name."),
   content_warnings: z.array(z.string().max(80)).max(20).optional().describe("Shown before fiction chapters."),
   original_written_at: partialDate.nullable().optional(),
@@ -201,6 +205,60 @@ server.registerTool(
   "revoke_share_link",
   { title: "Revoke secret link", description: "Stops a link working immediately.", inputSchema: { publication_id: id, link_id: z.string() } },
   ({ publication_id, link_id }) => run(() => api("DELETE", `/publications/${publication_id}/share-links/${link_id}`)),
+);
+
+server.registerTool(
+  "create_persona",
+  {
+    title: "Create persona",
+    description: "A reusable pen-name identity with its own author page and catalogue. Nothing public links it to your account or your other personas. Use it as a byline with byline: persona.",
+    inputSchema: { display_name: z.string().min(1).max(80), handle: z.string().max(30).optional().describe("Lowercase letters, numbers, hyphens. Made from the name if omitted."), bio: z.string().max(600).optional() },
+  },
+  (input) => run(() => api("POST", "/personas", input)),
+);
+
+server.registerTool("list_personas", { title: "List personas", description: "Your personas with their ids and handles." }, () => run(() => api("GET", "/personas")));
+
+server.registerTool(
+  "update_persona",
+  {
+    title: "Update persona",
+    description: "Rename a persona, change its handle or bio. Every work credited to it updates.",
+    inputSchema: { persona_id: z.string(), display_name: z.string().min(1).max(80).optional(), handle: z.string().max(30).optional(), bio: z.string().max(600).optional() },
+  },
+  ({ persona_id, ...patch }) => run(() => api("PATCH", `/personas/${persona_id}`, patch)),
+);
+
+server.registerTool(
+  "list_comments",
+  { title: "List comments", description: "Readers' responses on one of your publications (newest first), including hidden ones, with chapter slugs.", inputSchema: { publication_id: id } },
+  ({ publication_id }) => run(() => api("GET", `/publications/${publication_id}/comments`)),
+);
+
+server.registerTool(
+  "post_author_note",
+  {
+    title: "Post author's note",
+    description: "Pins a note at the top of a chapter's responses on your own publication. It appears under the work's byline (the persona or pen name, or 'Author'), never your account name.",
+    inputSchema: { publication_id: id, chapter_slug: z.string(), body: z.string().min(1).max(2000) },
+  },
+  ({ publication_id, chapter_slug, body }) => run(() => api("POST", `/publications/${publication_id}/comments`, { chapter_slug, body, pin: true })),
+);
+
+server.registerTool(
+  "reply_as_author",
+  {
+    title: "Reply as author",
+    description: "Replies to a reader's comment on your own publication, under the work's byline (persona, pen name or 'Author'). Use parent_id from list_comments.",
+    inputSchema: { publication_id: id, chapter_slug: z.string(), parent_id: z.string(), body: z.string().min(1).max(2000) },
+  },
+  ({ publication_id, chapter_slug, parent_id, body }) => run(() => api("POST", `/publications/${publication_id}/comments`, { chapter_slug, parent_id, body })),
+);
+
+server.registerTool(
+  "hide_comment",
+  { title: "Hide comment", description: "Hides a comment (and its replies) on your publication. Your own comments are deleted instead.", inputSchema: { comment_id: z.string() } },
+  ({ comment_id }) => run(() => api("DELETE", `/comments/${comment_id}`)),
 );
 
 await server.connect(new StdioServerTransport());

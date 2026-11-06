@@ -13,6 +13,7 @@ import { actorFrom, type Actor } from "@/server/services/actor";
 import * as chapters from "@/server/services/chapters";
 import { applyCommand, tagsFor } from "@/server/services/publishing";
 import * as apiTokens from "@/server/services/api-tokens";
+import * as personas from "@/server/services/personas";
 import * as shareLinks from "@/server/services/share-links";
 import * as users from "@/server/services/users";
 import * as works from "@/server/services/works";
@@ -235,6 +236,22 @@ export async function createApiTokenAction(name: string): Promise<ActionResult<{
 export async function revokeApiTokenAction(id: string): Promise<ActionResult> {
   return asResult(async () => {
     await apiTokens.revokeApiToken(await adminGuard(), id);
+    refresh();
+    return undefined;
+  });
+}
+
+export async function createPersonaAction(input: { display_name: string; handle?: string; bio: string }): Promise<ActionResult<{ id: string }>> {
+  return asResult(async () => {
+    const persona = await personas.createPersona(await guard(), { ...input, handle: input.handle || undefined });
+    refresh();
+    return { id: persona.id };
+  });
+}
+
+export async function updatePersonaAction(id: string, input: { display_name: string; handle: string; bio: string }): Promise<ActionResult> {
+  return asResult(async () => {
+    await personas.updatePersona(await guard(), id, input);
     refresh();
     return undefined;
   });

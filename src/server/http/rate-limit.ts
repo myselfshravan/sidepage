@@ -16,6 +16,7 @@ export const LIMITS = {
   save: { name: "save", max: 120, windowSeconds: 60 },
   publish: { name: "publish", max: 20, windowSeconds: 60 },
   write: { name: "write", max: 60, windowSeconds: 60 },
+  comment: { name: "comment", max: 10, windowSeconds: 60 },
   /** Agents publishing in parallel share one budget per token owner. */
   api: { name: "api", max: Number(process.env.API_RATE_LIMIT_PER_MIN ?? "") || 600, windowSeconds: 60 },
 } satisfies Record<string, Limit>;

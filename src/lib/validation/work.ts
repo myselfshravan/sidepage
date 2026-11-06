@@ -39,6 +39,8 @@ export const workMetadataSchema = z.object({
   byline: z.enum(BYLINES).default("profile"),
   /** The pen name when byline is "pen_name"; ignored otherwise. */
   author_name: text(120),
+  /** The persona when byline is "persona"; ignored otherwise. */
+  persona_id: z.string().max(128).nullable().default(null),
   slug: slugSchema,
   content_warnings: z.array(text(80).min(1)).max(20),
   seo_title: text(120),
@@ -47,7 +49,9 @@ export const workMetadataSchema = z.object({
   original_written_at: partialDateSchema.nullable(),
   /** ISO instant, or null. When the physical work was digitised. */
   digitized_at: z.iso.datetime({ offset: true }).nullable(),
-}).refine((d) => d.byline !== "pen_name" || d.author_name.length > 0, { message: "Add the pen name.", path: ["author_name"] });
+})
+  .refine((d) => d.byline !== "pen_name" || d.author_name.length > 0, { message: "Add the pen name.", path: ["author_name"] })
+  .refine((d) => d.byline !== "persona" || !!d.persona_id, { message: "Choose a persona.", path: ["persona_id"] });
 
 export const visibilitySchema = z.enum(VISIBILITIES);
 

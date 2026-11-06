@@ -94,3 +94,8 @@ Each entry: the decision, why, and what it costs.
 ### D22. Open Graph cards are generated in the site's type
 - **How:** `next/og` with Newsreader and Bodoni (OFL, in `assets/fonts`).
 - **Private pages:** secret-link pages deliberately inherit the generic site card, so a pasted private link never previews its title.
+
+### D23. Personas, and comments that follow the byline
+- **Personas:** `personas/{id}` are pen-name identities with handles from the shared `handles` namespace. A persona has its own author page (`getPublicAuthor` resolves either kind) and its own catalogue (`published.public_persona_id`), and can be followed (`following/persona:<id>`). `owner_uid` is server-only.
+- **Comments:** stored with the real `author_uid` (server-only). When the owner posts, the comment is displayed as the work's byline, so a pen-name author can't reply as themselves by accident.
+- **Not built, by decision:** fabricated accounts and backdated comments. Every comment comes from a signed-in person, at the time they post it.

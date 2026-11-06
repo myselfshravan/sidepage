@@ -13,6 +13,7 @@ type Initial = {
   description: string;
   author_name: string;
   byline: Byline;
+  persona_id: string | null;
   slug: string;
   content_warnings: string[];
   seo_title: string;
@@ -24,7 +25,7 @@ type Initial = {
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 
-export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: string; initial: Initial; locked: boolean; slugLocked: boolean }) {
+export function MetadataForm({ workId, initial, locked, slugLocked, personas }: { workId: string; initial: Initial; locked: boolean; slugLocked: boolean; personas: { id: string; displayName: string }[] }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<{ ok: boolean; message: string }>();
@@ -56,6 +57,7 @@ export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: 
             description: s("description"),
             byline,
             author_name: s("author_name"),
+            persona_id: byline === "persona" ? s("persona_id") || null : null,
             slug: s("slug"),
             content_warnings: s("content_warnings").split(",").map((w) => w.trim()).filter(Boolean),
             seo_title: s("seo_title"),
@@ -96,7 +98,8 @@ export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: 
                 {(
                   [
                     ["profile", "Your name"],
-                    ["pen_name", "Pen name"],
+                    ["persona", "Persona"],
+                    ["pen_name", "One-off pen name"],
                     ["anonymous", "Anonymous"],
                   ] as const
                 ).map(([value, label]) => (
@@ -106,6 +109,21 @@ export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: 
                   </label>
                 ))}
               </div>
+              {byline === "persona" ? (
+                personas.length ? (
+                  <select aria-label="Persona" name="persona_id" defaultValue={initial.persona_id ?? personas[0]!.id} className={inputClass}>
+                    {personas.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.displayName}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <p className="text-xs text-danger">
+                    You have no personas yet. <a href="/studio/personas" className="underline">Create one</a>.
+                  </p>
+                )
+              ) : null}
               {byline === "pen_name" ? (
                 <input aria-label="Pen name" name="author_name" required maxLength={120} defaultValue={initial.byline === "pen_name" ? initial.author_name : ""} placeholder="e.g. M. Vale" className={inputClass} />
               ) : (
@@ -114,7 +132,9 @@ export function MetadataForm({ workId, initial, locked, slugLocked }: { workId: 
               <p className="text-xs text-muted">
                 {byline === "profile"
                   ? "Credited to your profile, with a link to your author page."
-                  : "Never linked to your account, your author page or your other work, anywhere on the site."}
+                  : byline === "persona"
+                    ? "Credited to the persona, on the persona's own author page. Never linked to your account."
+                    : "Never linked to your account, your author page or your other work, anywhere on the site."}
               </p>
             </fieldset>
             <Field label="URL slug" htmlFor="m-slug" hint={slugLocked ? "Locked after the first edition so links keep working." : "Lowercase letters, numbers and hyphens."}>

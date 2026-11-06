@@ -16,6 +16,7 @@ export type AnalyticsEvents = {
   read_finished: { work_id: string };
   saved_to_library: { work_id: string; saved: boolean };
   followed_author: { author_uid: string; following: boolean };
+  comment_posted: { work_id: string; reply: boolean };
 };
 
 const KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;

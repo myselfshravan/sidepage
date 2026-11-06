@@ -7,7 +7,7 @@ All access is through the Admin SDK on the server. Security rules deny every cli
 | Path | Responsibility | Written by | Read by |
 |---|---|---|---|
 | `users/{uid}` | Profile: `handle`, `display_name`, `bio`, `email` (private), `role` (reader, author or admin), `author_status`, `author_request` | created on first sign-in; users, admins | server only; public author pages expose handle, name and bio for writers |
-| `handles/{handle}` | Unique handle reservation → `uid` | users service | author pages |
+| `handles/{handle}` | Unique handle reservation → `uid` or `persona_id` | users and personas services | author pages |
 | `users/{uid}/progress/{workId}` | Reading position: chapter slug, fraction | reader | that reader |
 | `users/{uid}/bookmarks/{id}` | Bookmarks: work, chapter, block, short excerpt of public text | reader | that reader |
 | `users/{uid}/library/{workId}` | Saved publications | reader | that reader |
@@ -20,6 +20,8 @@ All access is through the Admin SDK on the server. Security rules deny every cli
 | `editions/{id}/parts/{token}-{ordinal}-{part}` | Chapter snapshot (one or more parts per chapter) | publishing service | public read model |
 | `published/{workId}` | Public read model: `live`, `listed`, `visibility`, `current_edition_id`, card metadata, dates | publishing and visibility services | public pages |
 | `slugs/{slug}` | Global slug reservation → `work_id` | created in a transaction with the work | public pages |
+| `personas/{id}` | Pen-name identity: `owner_uid` (server-only), `handle`, `display_name`, `bio` | its owner | author pages (handle, name, bio only) |
+| `comments/{id}` | Chapter comment: `work_id`, `chapter_slug`, `parent_id`, `body`, `author_uid` (server-only), display identity, `is_author`, `pinned`, `status` | signed-in readers; owner and admin moderate | `/api/comments` (no account ids) |
 | `share_links/{sha256(token)}` | Secret link → `work_id`, `label`, `expires_at`, `revoked_at`, `last_opened_at`. The token itself is never stored. | owner, admin | secret-link pages |
 | `api_tokens/{sha256(token)}` | Agent token → `owner_uid`, `name`, `hint`, `last_used_at`, `revoked_at` | admins | `/api/v1` auth |
 | `rate_limits/{sha256}` | Fixed-window counters, keyed by a salted hash (no raw IPs or uids) | rate limiter | rate limiter |

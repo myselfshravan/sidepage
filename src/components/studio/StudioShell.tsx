@@ -18,6 +18,9 @@ export function StudioShell({ email, isAdmin, children }: { email: string; isAdm
               <Link href="/studio/publications" className="text-muted hover:text-ink">
                 Publications
               </Link>
+              <Link href="/studio/personas" className="text-muted hover:text-ink">
+                Personas
+              </Link>
               {isAdmin ? (
                 <Link href="/studio/admin" className="text-muted hover:text-ink">
                   Admin

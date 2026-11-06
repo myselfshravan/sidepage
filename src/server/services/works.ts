@@ -6,7 +6,7 @@ import type { Collection, Status, Visibility } from "@/domain/types";
 import { createWorkSchema, visibilitySchema, workMetadataSchema, type WorkMetadataInput } from "@/lib/validation/work";
 import { AppError } from "../errors";
 import { db } from "../firebase/admin";
-import { col, type ChapterDoc, type PublishedDoc, type WorkDoc, type WorkEventDoc } from "../firebase/model";
+import { col, type ChapterDoc, type PersonaDoc, type PublishedDoc, type WorkDoc, type WorkEventDoc } from "../firebase/model";
 import type { Actor } from "./actor";
 
 export const DEFAULT_TIMEZONE = "Asia/Kolkata";
@@ -113,6 +113,7 @@ function newWork(actor: Actor, collection: Collection, title: string, slug: stri
     description: "",
     author_name: authorName,
     byline: "profile",
+    persona_id: null,
     content_warnings: [],
     seo_title: "",
     seo_description: "",
@@ -152,6 +153,9 @@ export async function updateWorkMetadata(actor: Actor, workId: string, input: un
     // All reads precede writes in a transaction. The displayed name follows the
     // byline: the profile name, the pen name, or "Anonymous".
     const profileName = ((await tx.get(col.user(work.owner_uid))).get("display_name") as string | undefined) ?? work.author_name;
+    // A persona can only be credited on its own owner's work, whoever is editing.
+    const persona = data.byline === "persona" ? ((await tx.get(col.persona(data.persona_id!))).data() as PersonaDoc | undefined) : undefined;
+    if (data.byline === "persona" && (!persona || persona.owner_uid !== work.owner_uid)) throw new AppError("NOT_FOUND", "That persona doesn't exist.");
 
     if (data.slug !== work.slug) {
       if (work.edition_count > 0) {
@@ -163,10 +167,12 @@ export async function updateWorkMetadata(actor: Actor, workId: string, input: un
       tx.create(col.slug(data.slug), { work_id: workId });
     }
 
-    const authorName = data.byline === "anonymous" ? "Anonymous" : data.byline === "pen_name" ? data.author_name : profileName;
+    const authorName =
+      data.byline === "anonymous" ? "Anonymous" : data.byline === "pen_name" ? data.author_name : data.byline === "persona" ? persona!.display_name : profileName;
     tx.update(ref, {
       ...data,
       author_name: authorName,
+      persona_id: data.byline === "persona" ? data.persona_id : null,
       content_warnings: [...new Set(data.content_warnings)],
       digitized_at: data.digitized_at ? Timestamp.fromDate(new Date(data.digitized_at)) : null,
       last_edited_at: ts,
@@ -220,6 +226,7 @@ export async function duplicateWork(actor: Actor, workId: string, now = new Date
       description: work.description,
       author_name: work.author_name,
       byline: work.byline,
+      persona_id: work.persona_id ?? null,
       content_warnings: work.content_warnings,
       seo_title: work.seo_title,
       seo_description: work.seo_description,

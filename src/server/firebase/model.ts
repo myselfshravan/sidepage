@@ -25,7 +25,38 @@ export type UserDoc = {
   updated_at: Timestamp;
 };
 
-export type HandleDoc = { uid: string };
+/** A reserved handle: either an account's or a persona's. */
+export type HandleDoc = { uid?: string; persona_id?: string };
+
+/**
+ * A pen-name identity owned by an account. Public pages show only its handle, name
+ * and bio; `owner_uid` is server-only and never leaves the server.
+ */
+export type PersonaDoc = {
+  owner_uid: string;
+  handle: string;
+  display_name: string;
+  bio: string;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+};
+
+/** A reader's comment on a chapter. `author_uid` is server-only. */
+export type CommentDoc = {
+  work_id: string;
+  chapter_slug: string;
+  parent_id: string | null;
+  body: string;
+  author_uid: string;
+  /** How the comment is shown: the commenter's profile, or the work's byline when the owner posts. */
+  display_name: string;
+  display_handle: string;
+  is_author: boolean;
+  pinned: boolean;
+  status: "visible" | "hidden" | "deleted";
+  created_at: Timestamp;
+  moderated_by: string | null;
+};
 
 /** A personal access token for agents. Stored by the SHA-256 of the token; the token is shown once. */
 export type ApiTokenDoc = {
@@ -48,6 +79,8 @@ export type WorkDoc = {
   description: string;
   author_name: string;
   byline: Byline;
+  /** The persona credited when byline is "persona". */
+  persona_id: string | null;
   content_warnings: string[];
   seo_title: string;
   seo_description: string;
@@ -125,6 +158,7 @@ export type EditionMetadata = {
   description: string;
   author_name: string;
   byline: Byline;
+  persona_id: string | null;
   content_warnings: string[];
   seo_title: string;
   seo_description: string;
@@ -174,6 +208,8 @@ export type PublishedDoc = {
   owner_uid: string;
   /** The account credited publicly: the owner for profile bylines, null for pen names and anonymous works. */
   public_author_uid: string | null;
+  /** The persona credited publicly, for persona bylines; null otherwise. */
+  public_persona_id: string | null;
   /** Empty for pen names and anonymous works, so nothing links back to the account. */
   author_handle: string;
   collection: Collection;
@@ -232,6 +268,10 @@ export const col = {
   users: () => db().collection("users"),
   user: (uid: string) => db().collection("users").doc(uid),
   handle: (handle: string) => db().collection("handles").doc(handle),
+  personas: () => db().collection("personas"),
+  persona: (id: string) => db().collection("personas").doc(id),
+  comments: () => db().collection("comments"),
+  comment: (id: string) => db().collection("comments").doc(id),
   apiTokens: () => db().collection("api_tokens"),
   apiToken: (hash: string) => db().collection("api_tokens").doc(hash),
   shareLinks: () => db().collection("share_links"),

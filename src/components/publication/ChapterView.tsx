@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { RenderDoc } from "@/content/render/RenderDoc";
+import { Comments } from "@/components/reader/Comments";
 import { ContentWarningGate } from "@/components/reader/ContentWarningGate";
 import { InlineScript } from "@/components/reader/InlineScript";
 import { READER_PREFS_SCRIPT } from "@/components/reader/prefs";
@@ -62,6 +63,7 @@ export function ChapterBody({ data, base, shared }: { data: PublicChapter; base:
           </p>
         )}
       </nav>
+      {shared ? null : <Comments workId={work.workId} chapterSlug={chapter.slug} base={base} />}
     </article>
   );
 

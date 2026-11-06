@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
   try {
     const actor = actorFrom(viewer);
     if (author) return NextResponse.json({ signedIn: true, following: await reader.isFollowing(actor, author), self: author === viewer.uid }, { headers: noStore });
+
     if (!work) throw new AppError("INVALID", "Missing work.");
     return NextResponse.json({ signedIn: true, ...(await reader.readerState(actor, work)) }, { headers: noStore });
   } catch (error) {

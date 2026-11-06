@@ -9,6 +9,8 @@ import { LIMITS, rateLimit } from "@/server/http/rate-limit";
 import { authenticateApiToken } from "@/server/services/api-tokens";
 import type { Actor } from "@/server/services/actor";
 import * as chapters from "@/server/services/chapters";
+import * as comments from "@/server/services/comments";
+import * as personas from "@/server/services/personas";
 import { applyCommand, listEditions, tagsFor } from "@/server/services/publishing";
 import * as shareLinks from "@/server/services/share-links";
 import * as works from "@/server/services/works";
@@ -52,6 +54,7 @@ async function publicationView(actor: Actor, id: string) {
     description: work.description,
     slug: work.slug,
     byline: work.byline ?? "profile",
+    persona_id: work.persona_id ?? null,
     author_name: work.author_name,
     status: work.status,
     visibility: work.visibility,
@@ -71,7 +74,8 @@ const metadataPatch = z
     title: z.string(),
     subtitle: z.string(),
     description: z.string(),
-    byline: z.enum(["profile", "pen_name", "anonymous"]),
+    byline: z.enum(["profile", "persona", "pen_name", "anonymous"]),
+    persona_id: z.string().nullable(),
     pen_name: z.string(),
     slug: z.string(),
     content_warnings: z.array(z.string()),
@@ -96,6 +100,7 @@ async function patchMetadata(actor: Actor, id: string, input: unknown) {
     subtitle: w.subtitle,
     description: w.description,
     byline: w.byline ?? "profile",
+    persona_id: w.persona_id ?? null,
     author_name: w.byline === "pen_name" ? w.author_name : "",
     slug: w.slug,
     content_warnings: w.content_warnings,
@@ -136,6 +141,17 @@ async function route({ actor, segments, request }: Ctx): Promise<unknown> {
   const [root, id, sub, subId] = segments;
 
   if (root === "me" && segments.length === 1 && method === "GET") return { uid: actor.uid, role: actor.role };
+
+  if (root === "personas") {
+    if (!id && method === "GET") return personas.listPersonas(actor);
+    if (!id && method === "POST") return personas.createPersona(actor, await body(request));
+    if (id && !sub && method === "PATCH") return personas.updatePersona(actor, id, await body(request));
+  }
+
+  if (root === "comments" && id && !sub && method === "DELETE") {
+    await comments.removeComment(actor, id);
+    return { removed: id };
+  }
 
   if (root !== "publications") throw new AppError("NOT_FOUND", "Unknown endpoint.");
 
@@ -211,6 +227,17 @@ async function route({ actor, segments, request }: Ctx): Promise<unknown> {
     const { slug } = await works.setVisibility(actor, id, (await body<{ visibility?: unknown }>(request)).visibility);
     invalidate(tagsFor(id, slug));
     return publicationView(actor, id);
+  }
+
+  if (id && sub === "comments") {
+    if (method === "GET") return comments.listWorkComments(actor, id);
+    if (method === "POST") {
+      // Posted as the token owner. On their own work that is the work's byline (the
+      // persona, pen name or "Author"); on anyone else's work it is their profile.
+      const input = await body<{ chapter_slug?: string; body?: string; parent_id?: string | null; pin?: boolean }>(request);
+      const data = { workId: id, chapterSlug: input.chapter_slug, body: input.body, parentId: input.parent_id ?? null };
+      return input.pin ? comments.postAuthorNote(actor, data) : comments.postComment(actor, data);
+    }
   }
 
   if (id && sub === "share-links") {

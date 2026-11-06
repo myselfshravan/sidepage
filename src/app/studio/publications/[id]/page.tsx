@@ -12,6 +12,7 @@ import { COLLECTION_LABEL } from "@/domain/types";
 import { formatDateInZone, formatWords } from "@/lib/format";
 import { listChapters } from "@/server/services/chapters";
 import { listEditions } from "@/server/services/publishing";
+import { listPersonas } from "@/server/services/personas";
 import { listShareLinks } from "@/server/services/share-links";
 import { getManagedWork, listEvents } from "@/server/services/works";
 import { requireWriterPage } from "@/server/auth/session";
@@ -25,7 +26,7 @@ export default async function PublicationPage({ params }: PageProps<"/studio/pub
   const { id } = await params;
   const work = await getManagedWork(actor, id);
   if (!work) notFound();
-  const [chapters, editions, events, links] = await Promise.all([listChapters(actor, id), listEditions(actor, id), listEvents(actor, id), listShareLinks(actor, id)]);
+  const [chapters, editions, events, links, personas] = await Promise.all([listChapters(actor, id), listEditions(actor, id), listEvents(actor, id), listShareLinks(actor, id), listPersonas(actor)]);
   const tz = work.timezone;
   const iso = (t: { toDate(): Date } | null) => (t ? t.toDate().toISOString() : null);
   const publicHref = `/${work.collection}/${work.slug}`;
@@ -63,12 +64,14 @@ export default async function PublicationPage({ params }: PageProps<"/studio/pub
             workId={id}
             locked={work.status === "ARCHIVED"}
             slugLocked={work.edition_count > 0}
+            personas={personas.map((p) => ({ id: p.id, displayName: p.displayName }))}
             initial={{
               title: work.title,
               subtitle: work.subtitle,
               description: work.description,
               author_name: work.author_name,
               byline: work.byline ?? "profile",
+              persona_id: work.persona_id ?? null,
               slug: work.slug,
               content_warnings: work.content_warnings,
               seo_title: work.seo_title,

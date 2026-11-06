@@ -59,4 +59,7 @@ Pages are prerendered (partial prerendering), and per-request nonces would force
 | Pen-name and anonymous works expose no handle, account id or real name anywhere public, and never appear on the author page | `sharing.test.ts`, `agent.spec.ts` |
 | API tokens: admin-created only, stored hashed, refused when revoked, malformed or when the owner can't write; the API refuses missing or bad tokens | `sharing.test.ts`, `agent.spec.ts` |
 
+| Personas expose no account id, name or handle on any public surface; author pages list only their own work; personas can't be used on another owner's work | `tests/integration/personas-comments.test.ts`, `tests/e2e/persona.spec.ts` |
+| Comments never return account ids; owners post under the byline; only public chapters accept comments; moderation is limited to the owner and admins; readers delete only their own | `personas-comments.test.ts`, `persona.spec.ts` |
+
 Still deferred: storage access matching publication access, which arrives with uploads on Blaze.

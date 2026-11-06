@@ -3,7 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 import { formatPartialDate } from "@/domain/dates/partial-date";
 import type { ManuscriptDoc } from "@/domain/manuscript/schema";
 import type { Collection } from "@/domain/types";
-import { col, type HandleDoc, type PublishedDoc, type SlugDoc, type UserDoc } from "../firebase/model";
+import { col, type HandleDoc, type PersonaDoc, type PublishedDoc, type SlugDoc, type UserDoc } from "../firebase/model";
 import { loadChapter, loadEdition } from "./editions";
 
 // Public reads. Everything here is cacheable and shared between all visitors, so it
@@ -117,29 +117,36 @@ export async function listPublicWorks(collection: Collection | null, limit = PAG
   return snap.docs.map((d) => d.data() as PublishedDoc).filter(isPublic).map(toPublicWork);
 }
 
-export type PublicAuthor = { uid: string; handle: string; displayName: string; bio: string };
-
 /**
- * A writer's public profile by handle. Only accounts that can write have public
- * pages; readers' profiles are never exposed. Email is never returned.
+ * A public author page: an account that can write, or a persona. `followKey` is what
+ * readers follow (`<uid>` or `persona:<id>`). Personas expose nothing about their owner.
  */
+export type PublicAuthor = { kind: "account" | "persona"; followKey: string; handle: string; displayName: string; bio: string };
+
 export async function getPublicAuthor(handle: string): Promise<PublicAuthor | null> {
   "use cache";
   cacheLife("hours");
   cacheTag(`author:${handle}`);
-  const uid = ((await col.handle(handle).get()).data() as HandleDoc | undefined)?.uid;
-  if (!uid) return null;
-  const user = (await col.user(uid).get()).data() as UserDoc | undefined;
+  const ref = (await col.handle(handle).get()).data() as HandleDoc | undefined;
+  if (ref?.persona_id) {
+    const persona = (await col.persona(ref.persona_id).get()).data() as PersonaDoc | undefined;
+    if (!persona || persona.handle !== handle) return null;
+    return { kind: "persona", followKey: `persona:${ref.persona_id}`, handle, displayName: persona.display_name, bio: persona.bio };
+  }
+  if (!ref?.uid) return null;
+  const user = (await col.user(ref.uid).get()).data() as UserDoc | undefined;
   if (!user || user.role === "reader" || user.handle !== handle) return null;
-  return { uid, handle: user.handle, displayName: user.display_name, bio: user.bio };
+  return { kind: "account", followKey: ref.uid, handle: user.handle, displayName: user.display_name, bio: user.bio };
 }
 
-/** Listed public works by one author, newest first. */
-export async function listPublicWorksByAuthor(ownerUid: string, limit = 48): Promise<PublicWork[]> {
+/** Listed public works credited to one author page, newest first. */
+export async function listPublicWorksByAuthor(followKey: string, limit = 48): Promise<PublicWork[]> {
   "use cache";
   cacheLife("max");
-  cacheTag("catalog", `owner:${ownerUid}`);
-  // Only works credited to the profile: pen-name and anonymous works never appear here.
-  const snap = await col.published().where("listed", "==", true).where("public_author_uid", "==", ownerUid).orderBy("sort_at", "desc").limit(Math.min(limit, 100)).get();
+  cacheTag("catalog", `author-works:${followKey}`);
+  const field = followKey.startsWith("persona:") ? "public_persona_id" : "public_author_uid";
+  const value = followKey.startsWith("persona:") ? followKey.slice("persona:".length) : followKey;
+  // Only works credited to this page: pen-name, anonymous and other personas' works never appear.
+  const snap = await col.published().where("listed", "==", true).where(field, "==", value).orderBy("sort_at", "desc").limit(Math.min(limit, 100)).get();
   return snap.docs.map((d) => d.data() as PublishedDoc).filter(isPublic).map(toPublicWork);
 }
