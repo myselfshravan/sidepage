@@ -10,9 +10,9 @@ import { toPublicWork, type PublicChapter, type PublicToc, type PublicWork } fro
 // and the work's published state are checked on every request, so revoking a link
 // or withdrawing the work locks readers out immediately.
 
-export type SharedWork = { work: PublicWork; toc: PublicToc };
+export type SharedWork = { work: PublicWork; toc: PublicToc; gift: { recipientName: string; dedication: string } | null };
 
-async function resolve(token: string, at?: Date): Promise<{ pub: PublishedDoc; linkId: string } | null> {
+async function resolve(token: string, at?: Date): Promise<{ pub: PublishedDoc; linkId: string; link: ShareLinkDoc } | null> {
   // Request-time only: never part of a prerendered or prefetched shell.
   if (!at) await connection();
   const now = at ?? new Date();
@@ -23,7 +23,7 @@ async function resolve(token: string, at?: Date): Promise<{ pub: PublishedDoc; l
   if (link.expires_at && link.expires_at.toMillis() <= now.getTime()) return null;
   const pub = (await col.publishedDoc(link.work_id).get()).data() as PublishedDoc | undefined;
   if (!pub || !pub.live) return null;
-  return { pub, linkId };
+  return { pub, linkId, link };
 }
 
 export async function getSharedWork(token: string, at?: Date): Promise<SharedWork | null> {
@@ -37,6 +37,7 @@ export async function getSharedWork(token: string, at?: Date): Promise<SharedWor
   return {
     work: toPublicWork(found.pub),
     toc: edition.toc.map((t) => ({ slug: t.slug, title: t.title, ordinal: t.ordinal, wordCount: t.word_count })),
+    gift: found.link.gift ? { recipientName: found.link.gift.recipient_name, dedication: found.link.gift.dedication } : null,
   };
 }
 

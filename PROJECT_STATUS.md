@@ -1,6 +1,6 @@
 # Project status
 
-**sidepage is a live multi-author platform at https://sidepage.vercel.app.** Agents can write and publish through a local MCP server (docs/AGENTS.md); works can carry pen names and be private behind secret links.
+**sidepage is a live multi-author platform at https://sidepage.vercel.app.** Agents write and publish through a local MCP server (docs/AGENTS.md). Authors write under personas, can keep works private behind secret or gift links, and readers respond in chapter comments.
 Last updated 2026-11-06.
 
 ## Done and verified
@@ -25,9 +25,9 @@ Each item was checked by the named tests, or in a real browser (Chromium via Pla
 |---|---|
 | `pnpm typecheck`, `pnpm lint` | pass, 0 warnings |
 | `pnpm test` (unit, including Markdown round trip, access policy and the analytics privacy check) | 49/49 |
-| Integration + rules (emulators; including secret links, pen names, API tokens, cross-author isolation, roles, reader data) | 68/68 |
+| Integration + rules (emulators; including personas, comments, gifts, secret links, API tokens, cross-author isolation, roles, reader data) | 77/77 |
 | `pnpm build` | pass |
-| `pnpm test:e2e` (including an agent writing and privately publishing through the real MCP server) | 20/20 |
+| `pnpm test:e2e` (including agent publishing through the real MCP server, persona catalogues, comments and gifts) | 21/21 |
 
 ## Deployment status
 
@@ -43,7 +43,7 @@ Each item was checked by the named tests, or in a real browser (Chromium via Pla
 | PostHog | Shares the existing PostHog project; every event is tagged `app: sidepage` (D18). Dashboard: https://us.posthog.com/project/78153/dashboard/2312169 (daily traffic, top pages; product-event tiles to add once those events arrive). |
 | Admin | shravanrevanna@gmail.com is admin on `sidepage-c4daa`. |
 | Agents | Create a token at /studio/admin, then register the MCP server (docs/AGENTS.md). |
-| Still open | Invite-by-account and gift invitations; product-event tiles on the PostHog dashboard once events arrive; separate `sidepage-prod` project, domain, backups (Phase 9). |
+| Still open | Invite-by-account and emailed invitations; product-event tiles on the PostHog dashboard once events arrive; separate `sidepage-prod` project, domain, backups (Phase 9). |
 
 ## Known limitations
 

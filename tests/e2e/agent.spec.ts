@@ -74,6 +74,16 @@ test("an agent writes and privately publishes under a pen name through the MCP s
     await reader.getByRole("button", { name: "Continue to the chapter" }).click();
     await expect(reader.getByText("never pencil")).toBeVisible();
 
+    // A gift link opens on a page addressed to the recipient, signed with the byline.
+    const gift = await call(client, "create_share_link", { publication_id: id, gift_for: "Ana", dedication: "Read this one slowly." });
+    await reader.goto(new URL(gift.url!).pathname);
+    await expect(reader.getByRole("heading", { name: "For Ana" })).toBeVisible();
+    await expect(reader.getByText("Read this one slowly.")).toBeVisible();
+    await expect(reader.getByText("— V. Marlowe")).toBeVisible();
+    await expect(reader.getByText("Sample Admin")).toHaveCount(0);
+    await reader.getByRole("link", { name: `Open “${title}”` }).click();
+    await expect(reader.getByRole("heading", { name: title })).toBeVisible();
+
     // It isn't listed or reachable publicly.
     await reader.goto("/fiction");
     await expect(reader.getByText(title)).toHaveCount(0);

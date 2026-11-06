@@ -208,7 +208,10 @@ export async function setRoleAction(uid: string, role: string): Promise<ActionRe
   });
 }
 
-export async function createShareLinkAction(workId: string, input: { label: string; expires_in_days: number | null }): Promise<ActionResult<{ url: string }>> {
+export async function createShareLinkAction(
+  workId: string,
+  input: { label: string; expires_in_days: number | null; gift: { recipient_name: string; dedication: string } | null },
+): Promise<ActionResult<{ url: string }>> {
   return asResult(async () => {
     const { token } = await shareLinks.createShareLink(await guard(), parseId(workId), input);
     const origin = (await headers()).get("origin") ?? "";

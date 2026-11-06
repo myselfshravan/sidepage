@@ -246,6 +246,8 @@ export type ShareLinkDoc = {
   expires_at: Timestamp | null;
   revoked_at: Timestamp | null;
   last_opened_at: Timestamp | null;
+  /** Present when the link is a gift: shown to the recipient before the book. */
+  gift: { recipient_name: string; dedication: string } | null;
 };
 
 export type RateLimitDoc = { window_start: Timestamp; count: number; expires_at: Timestamp };

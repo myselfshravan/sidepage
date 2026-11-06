@@ -99,6 +99,8 @@ add_chapter          { publication_id, title: "…", markdown: "…" }
 publish              { publication_id, effective_at: "2009-03-01T00:00:00Z" }
 ```
 
+**Gifts.** Add `gift_for` (and a `dedication`) to `create_share_link`. The recipient first sees a page addressed to them, "For Ana", with your dedication, signed with the work's byline, then opens the book.
+
 A private, pen-name piece in five calls:
 
 ```

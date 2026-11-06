@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { ResumeLink } from "@/components/reader/ResumeLink";
@@ -15,7 +16,7 @@ export async function PublicationView({ collection, params }: { collection: Coll
 }
 
 /** The publication page itself. `shared` pages are reached by a secret link and keep nothing on the account. */
-export function PublicationBody({ work, toc, base, shared }: { work: PublicWork; toc: PublicToc; base: string; shared: boolean }) {
+export function PublicationBody({ work, toc, base, shared, intro }: { work: PublicWork; toc: PublicToc; base: string; shared: boolean; intro?: ReactNode }) {
   const collection = work.collection;
   const first = toc[0];
   const fiction = collection === "fiction";
@@ -23,6 +24,8 @@ export function PublicationBody({ work, toc, base, shared }: { work: PublicWork;
   return (
     <>
       <SiteHeader current={shared ? undefined : `/${collection}`} />
+      {intro}
+      {intro ? <span id="book" aria-hidden /> : null}
       <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-5 py-14 sm:px-8 sm:py-20">
         <article className="grid gap-12 md:grid-cols-[auto_1fr] md:gap-16">
           <div className="md:sticky md:top-10 md:self-start">

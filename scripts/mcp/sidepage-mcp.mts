@@ -189,10 +189,24 @@ server.registerTool(
   "create_share_link",
   {
     title: "Create secret link",
-    description: "A secret URL that opens this publication for anyone holding it, even when private. Returned once; store it. Optional expiry in days.",
-    inputSchema: { publication_id: id, label: z.string().max(80).optional(), expires_in_days: z.number().int().min(1).max(3650).optional() },
+    description:
+      "A secret URL that opens this publication for anyone holding it, even when private. Returned once; store it. Optional expiry in days. Add gift_for (and a dedication) to make it a gift: the recipient first sees a page addressed to them, signed with the work's byline.",
+    inputSchema: {
+      publication_id: id,
+      label: z.string().max(80).optional(),
+      expires_in_days: z.number().int().min(1).max(3650).optional(),
+      gift_for: z.string().max(80).optional().describe("The recipient's name, e.g. 'Ana'."),
+      dedication: z.string().max(1000).optional(),
+    },
   },
-  ({ publication_id, label, expires_in_days }) => run(() => api("POST", `/publications/${publication_id}/share-links`, { label: label ?? "", expires_in_days: expires_in_days ?? null })),
+  ({ publication_id, label, expires_in_days, gift_for, dedication }) =>
+    run(() =>
+      api("POST", `/publications/${publication_id}/share-links`, {
+        label: label ?? (gift_for ? `Gift for ${gift_for}` : ""),
+        expires_in_days: expires_in_days ?? null,
+        gift: gift_for ? { recipient_name: gift_for, dedication: dedication ?? "" } : null,
+      }),
+    ),
 );
 
 server.registerTool(

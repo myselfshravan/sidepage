@@ -21,6 +21,7 @@ export function ShareLinksPanel({ workId, links, live }: { workId: string; links
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string>();
   const [confirm, setConfirm] = useState<string | null>(null);
+  const [gift, setGift] = useState(false);
 
   return (
     <Panel id="share" title="Secret links" description="Anyone with a link can read this publication, even if it's private. Links never appear anywhere public.">
@@ -33,7 +34,12 @@ export function ShareLinksPanel({ workId, links, live }: { workId: string; links
           startTransition(async () => {
             setError(undefined);
             setCopied(false);
-            const r = await createShareLinkAction(workId, { label: String(f.get("label") ?? ""), expires_in_days: days ? Number(days) : null });
+            const recipient = String(f.get("recipient") ?? "").trim();
+            const r = await createShareLinkAction(workId, {
+              label: String(f.get("label") ?? "") || (gift ? `Gift for ${recipient}` : ""),
+              expires_in_days: days ? Number(days) : null,
+              gift: gift ? { recipient_name: recipient, dedication: String(f.get("dedication") ?? "") } : null,
+            });
             if (r.ok) {
               setCreated(r.value.url);
               router.refresh();
@@ -55,8 +61,21 @@ export function ShareLinksPanel({ workId, links, live }: { workId: string; links
             </select>
           </Field>
         </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={gift} onChange={(e) => setGift(e.target.checked)} /> Make it a gift
+        </label>
+        {gift ? (
+          <div className="space-y-3 rounded-[var(--radius)] border border-rule bg-paper p-3">
+            <Field label="For" htmlFor="gift-for" hint="Shown on the first page: “For …”.">
+              <input id="gift-for" name="recipient" required maxLength={80} className={inputClass} />
+            </Field>
+            <Field label="Dedication" htmlFor="gift-dedication" hint="Signed with this work's byline, never your account name.">
+              <textarea id="gift-dedication" name="dedication" rows={3} maxLength={1000} className={inputClass} />
+            </Field>
+          </div>
+        ) : null}
         <Button type="submit" variant="primary" disabled={pending} className="w-full">
-          {pending ? "Creating…" : "Create link"}
+          {pending ? "Creating…" : gift ? "Create gift link" : "Create link"}
         </Button>
         {!live ? <p className="text-xs text-muted">Links open the published edition, so they start working once this is published.</p> : null}
       </form>
@@ -84,7 +103,10 @@ export function ShareLinksPanel({ workId, links, live }: { workId: string; links
           {links.map((l) => (
             <li key={l.id} className="flex items-start justify-between gap-3 py-3">
               <div className="min-w-0">
-                <p className={l.active ? "font-medium" : "text-muted line-through"}>{l.label || "Untitled link"}</p>
+                <p className={l.active ? "font-medium" : "text-muted line-through"}>
+                  {l.label || "Untitled link"}
+                  {l.giftFor ? <span className="ml-2 rounded-full bg-paper px-2 py-px text-xs font-normal text-muted">gift</span> : null}
+                </p>
                 <p className="text-xs text-muted">
                   {l.revokedAt ? "Revoked" : !l.active ? "Expired" : l.expiresAt ? `Expires ${new Date(l.expiresAt).toLocaleDateString()}` : "No expiry"}
                   {l.lastOpenedAt ? `, last opened ${new Date(l.lastOpenedAt).toLocaleDateString()}` : ", not opened yet"}

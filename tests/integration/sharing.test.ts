@@ -104,6 +104,19 @@ describe("secret links", () => {
   });
 });
 
+describe("gift links", () => {
+  it("carry a recipient and dedication, shown only through the link", async () => {
+    const { workId } = await publishedWork(alice);
+    await setVisibility(alice, workId, "PRIVATE", t0);
+    const gift = await createShareLink(alice, workId, { gift: { recipient_name: "Ana", dedication: "For the summer we read everything." } }, t0);
+    const plain = await createShareLink(alice, workId, {}, t0);
+    expect((await getSharedWork(gift.token, t0))?.gift).toEqual({ recipientName: "Ana", dedication: "For the summer we read everything." });
+    expect((await getSharedWork(plain.token, t0))?.gift).toBeNull();
+    expect((await listShareLinks(alice, workId, t0)).map((l) => l.giftFor).sort()).toEqual(["Ana", null].sort());
+    await expect(createShareLink(alice, workId, { gift: { recipient_name: "  ", dedication: "" } }, t0)).rejects.toMatchObject({ code: "INVALID" });
+  });
+});
+
 describe("pen names", () => {
   it("never connect a pen-name or anonymous work to the account", async () => {
     const credited = await publishedWork(alice, "Signed Work");

@@ -26,6 +26,14 @@ export function isShareTokenShape(token: string): boolean {
 const createInput = z.object({
   label: z.string().trim().max(80).default(""),
   expires_in_days: z.number().int().min(1).max(3650).nullable().default(null),
+  /** Makes the link a gift: the recipient sees a dedication before the book. */
+  gift: z
+    .object({
+      recipient_name: z.string().trim().min(1, "Who is the gift for?").max(80),
+      dedication: z.string().trim().max(1000).default(""),
+    })
+    .nullable()
+    .default(null),
 });
 
 export async function createShareLink(actor: Actor, workId: string, input: unknown, now = new Date()): Promise<{ token: string; id: string; expiresAt: string | null }> {
@@ -45,11 +53,21 @@ export async function createShareLink(actor: Actor, workId: string, input: unkno
     expires_at: expires,
     revoked_at: null,
     last_opened_at: null,
+    gift: data.gift,
   } satisfies ShareLinkDoc);
   return { token, id, expiresAt: expires?.toDate().toISOString() ?? null };
 }
 
-export type ShareLinkSummary = { id: string; label: string; createdAt: string; expiresAt: string | null; revokedAt: string | null; lastOpenedAt: string | null; active: boolean };
+export type ShareLinkSummary = {
+  id: string;
+  label: string;
+  createdAt: string;
+  expiresAt: string | null;
+  revokedAt: string | null;
+  lastOpenedAt: string | null;
+  active: boolean;
+  giftFor: string | null;
+};
 
 export async function listShareLinks(actor: Actor, workId: string, now = new Date()): Promise<ShareLinkSummary[]> {
   await requireManagedWork(actor, workId);
@@ -65,6 +83,7 @@ export async function listShareLinks(actor: Actor, workId: string, now = new Dat
       revokedAt: l.revoked_at?.toDate().toISOString() ?? null,
       lastOpenedAt: l.last_opened_at?.toDate().toISOString() ?? null,
       active: !l.revoked_at && !expired,
+      giftFor: l.gift?.recipient_name ?? null,
     };
   });
 }
