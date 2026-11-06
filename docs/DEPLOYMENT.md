@@ -28,6 +28,8 @@ The project belongs to `shravanrevanna@gmail.com`. The machine's default firebas
    firebase deploy --only firestore:rules,firestore:indexes --project dev --account shravanrevanna@gmail.com
    ```
    Storage rules can only be deployed once a bucket exists, which needs Blaze.
+
+   **Deploy indexes before the code that needs them.** The emulators don't enforce composite indexes, so a missing index only shows up in production, as a `FAILED_PRECONDITION` error. Builds take a few minutes; a query fails until its index is `READY`.
 5. **Grant the author role:**
    - Sign in once at `/sign-in` with Google. This is refused at first, which is expected, but it creates the account.
    - Then run, with Application Default Credentials for that Google account:

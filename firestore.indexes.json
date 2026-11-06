@@ -211,6 +211,20 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "works",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "owner_uid",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "word_count",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": [
